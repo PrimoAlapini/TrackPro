@@ -1,0 +1,70 @@
+/* TrackPro Design Tokens */
+
+:root {
+  /* LIGHT THEME */
+  --background: #F8FAFC;
+  --sidebar: #FFFFFF;
+  --card: #FFFFFF;
+  --border: #E2E8F0;
+  --track: #E2E8F0;
+  --input: #F8FAFC;
+  --foreground: #0F172A;
+  --muted: #475569;
+  
+  /* Brand colors (identical in both themes) */
+  --primary: #6366F1;
+  --primary-foreground: #FFFFFF;
+  --secondary: #22D3EE;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  
+  /* Badge colors */
+  --badge-success-fg: #047857;
+  --badge-success-bg: rgba(16, 185, 129, 0.14);
+  --badge-progress-fg: #0E7490;
+  --badge-progress-bg: rgba(34, 211, 238, 0.18);
+  --badge-danger-fg: #B91C1C;
+  --badge-danger-bg: rgba(239, 68, 68, 0.12);
+}
+
+.dark {
+  /* DARK THEME (original charter) */
+  --background: #0F172A;
+  --sidebar: #0B1325;
+  --card: #131D33;
+  --border: #23304A;
+  --track: #1E293B;
+  --input: #0F172A;
+  --foreground: #E2E8F0;
+  --muted: #94A3B8;
+  
+  /* Badge colors for dark */
+  --badge-success-fg: #34D399;
+  --badge-success-bg: rgba(16, 185, 129, 0.16);
+  --badge-progress-fg: #67E8F9;
+  --badge-progress-bg: rgba(34, 211, 238, 0.14);
+  --badge-danger-fg: #FCA5A5;
+  --badge-danger-bg: rgba(239, 68, 68, 0.16);
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

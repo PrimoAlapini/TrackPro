@@ -1,0 +1,10 @@
+# Supabase configuration
+[project]
+project_id = "trackpro"
+
+[api]
+enabled = true
+
+[db]
+# Vector support
+vector_enabled = true
