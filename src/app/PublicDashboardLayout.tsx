@@ -34,7 +34,6 @@ export function PublicDashboardLayout({ children }: PublicDashboardLayoutProps) 
             {/* Logo */}
             <div className="flex items-center gap-2">
               <img src="/logo.png" alt="TrackPro Logo" className="h-8 w-8" />
-              <h1 className="text-xl font-bold">TrackPro</h1>
             </div>
 
             {/* Middle: Dossier selector */}
