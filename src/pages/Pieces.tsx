@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, FileText, GripVertical, Edit2, Trash2, Users } from 'lucide-react'
+import { Eye, FileText, GripVertical, Edit2, Trash2, Users, Search } from 'lucide-react'
 import { useDossier } from '@/contexts/DossierContext'
 import { usePieces, useCreatePiece, useUpdatePiece, useDeletePiece, useUpdatePiecesOrder } from '@/features/pieces/api'
 import { useSuiviPieces, useUpdateSuiviPieceDynamic, useAddMemberToDossier, useRemoveMemberFromDossier, useDossierMembers } from '@/features/suivi/api'
@@ -49,6 +49,7 @@ export function Pieces() {
   const [selectedSuivi, setSelectedSuivi] = useState<SuiviPiece | null>(null)
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [draggedPieceId, setDraggedPieceId] = useState<string | null>(null)
+  const [memberSearchQuery, setMemberSearchQuery] = useState('')
 
   const activeDossier = dossiers.find((d) => d.id === activeDossierId)
   const assignedMembers = dossierMembres.map((dm) => ({
@@ -58,6 +59,11 @@ export function Pieces() {
   })) as DossierMembre[]
 
   const dossierMembers = membres.filter((m) => dossierMembres.includes(m.id))
+
+  // Filter members by search query
+  const filteredDossierMembers = dossierMembers.filter((m) =>
+    m.nom.toLowerCase().includes(memberSearchQuery.toLowerCase())
+  )
 
   // Select first member by default
   const memberId = selectedMemberId || dossierMembres[0]
@@ -338,26 +344,48 @@ export function Pieces() {
             />
           ) : (
             <div className="space-y-3">
+              {/* Search input */}
+              <div className="flex items-center gap-2 bg-[var(--input)] rounded-lg px-3 py-2">
+                <Search className="w-4 h-4 text-[var(--muted)]" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un membre..."
+                  value={memberSearchQuery}
+                  onChange={(e) => {
+                    setMemberSearchQuery(e.target.value)
+                    // Si le membre actuellement sélectionné n'est pas dans les résultats filtrés, déselectionner
+                    if (!filteredDossierMembers.find((m) => m.id === memberId)) {
+                      setSelectedMemberId(filteredDossierMembers[0]?.id || null)
+                    }
+                  }}
+                  className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--foreground)] placeholder-[var(--muted)]"
+                />
+              </div>
+
               {/* Member tabs */}
               <div className="flex flex-wrap gap-2">
-                {dossierMembers.map((member) => (
-                  <button
-                    key={member.id}
-                    onClick={() => setSelectedMemberId(member.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors font-medium text-sm ${
-                      memberId === member.id
-                        ? 'bg-[var(--primary)] text-white'
-                        : 'bg-[var(--input)] text-[var(--foreground)] hover:opacity-70'
-                    }`}
-                  >
-                    <Avatar
-                      initials={getInitials(member.nom)}
-                      color={member.couleur_avatar as any}
-                      size="sm"
-                    />
-                    {member.nom}
-                  </button>
-                ))}
+                {filteredDossierMembers.length === 0 ? (
+                  <p className="text-sm text-[var(--muted)] w-full text-center py-2">Aucun membre trouvé</p>
+                ) : (
+                  filteredDossierMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      onClick={() => setSelectedMemberId(member.id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors font-medium text-sm ${
+                        memberId === member.id
+                          ? 'bg-[var(--primary)] text-white'
+                          : 'bg-[var(--input)] text-[var(--foreground)] hover:opacity-70'
+                      }`}
+                    >
+                      <Avatar
+                        initials={getInitials(member.nom)}
+                        color={member.couleur_avatar as any}
+                        size="sm"
+                      />
+                      {member.nom}
+                    </button>
+                  ))
+                )}
               </div>
               
               {/* Selected member progress */}
