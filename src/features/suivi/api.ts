@@ -17,7 +17,10 @@ export function useSuiviPieces(dossierId: string | undefined = undefined) {
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.warn('Error fetching suivi pieces:', error)
+        return []
+      }
       return data as SuiviPiece[]
     },
   })

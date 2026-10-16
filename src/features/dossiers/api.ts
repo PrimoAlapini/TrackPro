@@ -14,7 +14,11 @@ export function useDossiers() {
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.warn('Error fetching dossiers:', error)
+        // Return empty array on error to allow public access to work
+        return []
+      }
       return data as Dossier[]
     },
   })

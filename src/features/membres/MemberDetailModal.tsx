@@ -23,6 +23,7 @@ interface MemberDetailModalProps {
   suiviList: SuiviPiece[]
   onStatusChange: (followId: string, newStatus: SuiviPiece['statut']) => Promise<void>
   isUpdating?: boolean
+  isPublic?: boolean
 }
 
 const STATUS_OPTIONS = [
@@ -40,6 +41,7 @@ export function MemberDetailModal({
   suiviList,
   onStatusChange,
   isUpdating = false,
+  isPublic = false,
 }: MemberDetailModalProps) {
   const alert = useAlert()
   const [openStatusId, setOpenStatusId] = useState<string | null>(null)
@@ -84,41 +86,43 @@ export function MemberDetailModal({
       isOpen={isOpen}
       onClose={onClose}
       title=""
-      size="xl" // Élargissement du conteneur principal
+      size="xl" // Augmentation de la largeur du modal
     >
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
+        <div className="flex items-center justify-between pb-5 border-b border-[var(--border)]">
           <div className="flex items-center gap-4">
             <Avatar
               initials={getInitials(member.nom)}
               color={member.couleur_avatar as any}
               size="lg"
-              className="w-14 h-14"
+              className="w-16 h-16 text-lg font-semibold shadow-sm"
             />
             <div>
-              <h2 className="text-[22px] font-bold text-[var(--foreground)]">{member.nom}</h2>
+              <h2 className="text-2xl font-bold text-[var(--foreground)]">{member.nom}</h2>
               <p className="text-sm text-[var(--muted)] mt-0.5">
-                {memberDossiers.length} dossier{memberDossiers.length !== 1 ? 's' : ''} · {deposeeCount} / {memberSuiviAll.length} pièces déposées
+                {memberDossiers.length} dossier{memberDossiers.length !== 1 ? 's' : ''} assigné{memberDossiers.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[var(--input)] rounded-lg transition-colors border border-[var(--border)]"
+            className="p-2.5 hover:bg-[var(--input)] rounded-xl transition-colors border border-[var(--border)] text-[var(--foreground)]"
             aria-label="Fermer"
           >
-            <X className="w-5 h-5 text-[var(--foreground)]" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Progression globale */}
-        <div className="bg-[var(--input)] p-4 rounded-xl border border-[var(--border)] space-y-2">
-          <div className="flex justify-between items-center text-xs font-medium text-[var(--muted)]">
-            <span>Progression globale</span>
-            <span className="text-[var(--foreground)] font-semibold">{globalPct}%</span>
+        {/* Global Progress Card */}
+        <div className="bg-[var(--input)] border border-[var(--border)] rounded-2xl p-4 space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="font-medium text-[var(--foreground)]">Progression globale</span>
+            <span className="font-semibold text-[var(--foreground)]">
+              {deposeeCount} / {memberSuiviAll.length} pièces déposées ({globalPct}%)
+            </span>
           </div>
-          <div className="h-2 bg-[var(--track)] rounded-full overflow-hidden">
+          <div className="h-2.5 bg-[var(--track)] rounded-full overflow-hidden">
             <div
               className={`h-full transition-all duration-300 bg-[var(--${pieceBarColor(globalPct)})]`}
               style={{ width: `${globalPct}%` }}
@@ -126,7 +130,7 @@ export function MemberDetailModal({
           </div>
         </div>
 
-        {/* Liste des dossiers */}
+        {/* Dossiers Container avec Scroll Émincé */}
         {memberDossiers.length === 0 ? (
           <EmptyState
             icon={<FileText className="w-12 h-12" />}
@@ -135,7 +139,7 @@ export function MemberDetailModal({
             action={null}
           />
         ) : (
-          <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-3 [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[var(--border)] [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
             {memberDossiers.map((dossier) => {
               const dossierSuivi = suiviList.filter(
                 (s) => s.dossier_id === dossier.id && s.membre_id === member.id
@@ -147,50 +151,49 @@ export function MemberDetailModal({
               return (
                 <div
                   key={dossier.id}
-                  className="bg-[var(--input)] border border-[var(--border)] rounded-2xl p-6 space-y-5"
+                  className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 space-y-4 shadow-sm"
                 >
                   {/* Header Dossier */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--muted)]">
-                          TRK-{dossier.id.slice(0, 3).toUpperCase()}
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--input)] text-[var(--muted)] border border-[var(--border)]">
+                          TRK-{dossier.id.slice(0, 4).toUpperCase()}
                         </span>
-                        <p className="font-semibold text-[var(--foreground)] text-base">{dossier.nom}</p>
+                        <h3 className="font-semibold text-base text-[var(--foreground)]">{dossier.nom}</h3>
                       </div>
-                      <span className="text-xs font-medium px-3 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
-                        {deposee} / {dossierPieces.length} pièces
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-sm font-medium text-[var(--foreground)] bg-[var(--input)] px-3 py-1 rounded-full border border-[var(--border)]">
+                        {deposee} / {dossierPieces.length} validées
                       </span>
                     </div>
+                  </div>
 
-                    <div className="space-y-1">
-                      <div className="h-1.5 bg-[var(--track)] rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 bg-[var(--${pieceBarColor(dossierPct)})]`}
-                          style={{ width: `${dossierPct}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-end">
-                        <span className="text-[11px] text-[var(--muted)]">{dossierPct}%</span>
-                      </div>
+                  {/* Progress bar Dossier */}
+                  <div className="space-y-1">
+                    <div className="h-1.5 bg-[var(--track)] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 bg-[var(--${pieceBarColor(dossierPct)})]`}
+                        style={{ width: `${dossierPct}%` }}
+                      />
                     </div>
                   </div>
 
                   {/* Tableau pièces */}
                   {dossierPieces.length === 0 ? (
-                    <p className="text-sm text-[var(--muted)] text-center py-3">
+                    <p className="text-sm text-[var(--muted)] text-center py-2">
                       Aucune pièce dans ce dossier
                     </p>
                   ) : (
-                    <div className="pt-3 space-y-3 border-t border-[var(--border)]">
-                      {/* En-tête des colonnes avec espacement plus confortable (5/4/3) */}
-                      <div className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider grid grid-cols-12 gap-4 px-3">
+                    <div className="pt-2 space-y-2 border-t border-[var(--border)]">
+                      <div className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider grid grid-cols-12 gap-3 px-1">
                         <div className="col-span-5">Pièce</div>
                         <div className="col-span-4">Statut</div>
                         <div className="col-span-3 text-right">Déposée le</div>
                       </div>
-
-                      <div className="space-y-2.5">
+                      
+                      <div className="space-y-1.5">
                         {dossierPieces.map((piece) => {
                           const suivi = dossierSuivi.find((s) => s.piece_id === piece.id)
                           if (!suivi) return null
@@ -198,68 +201,72 @@ export function MemberDetailModal({
                           return (
                             <div
                               key={piece.id}
-                              className="grid grid-cols-12 gap-4 items-center p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]"
+                              className="grid grid-cols-12 gap-3 items-center p-2 rounded-xl hover:bg-[var(--input)] transition-colors border border-transparent hover:border-[var(--border)]"
                             >
-                              {/* Nom de la pièce */}
-                              <div className="col-span-5 flex items-center gap-2.5 min-w-0">
-                                <FileText className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
-                                <span className="text-sm text-[var(--foreground)] truncate font-medium">
+                              {/* Pièce */}
+                              <div className="col-span-5 flex items-center gap-2.5">
+                                <div className="p-1.5 rounded-lg bg-[var(--input)] text-[var(--muted)] border border-[var(--border)] flex-shrink-0">
+                                  <FileText className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-sm font-medium text-[var(--foreground)] truncate">
                                   {piece.nom}
                                 </span>
                               </div>
 
-                              {/* Statut & Dropdown élargi */}
-                              <div className="col-span-4 relative">
-                                <button
-                                  onClick={() =>
-                                    setOpenStatusId(
-                                      openStatusId === suivi.id ? null : suivi.id
-                                    )
-                                  }
-                                  className="group flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--input)] hover:border-[var(--muted)] transition-all w-full text-left"
-                                  aria-haspopup="listbox"
-                                  disabled={isUpdating}
-                                >
-                                  <div className="flex items-center min-w-0 truncate whitespace-nowrap">
+                              {/* Statut */}
+                              {isPublic ? (
+                                <div className="col-span-7">
+                                  <StatusBadge status={suivi.statut} />
+                                </div>
+                              ) : (
+                                <div className="col-span-4 relative">
+                                  <button
+                                    onClick={() =>
+                                      setOpenStatusId(
+                                        openStatusId === suivi.id ? null : suivi.id
+                                      )
+                                    }
+                                    className="flex items-center justify-between gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--input)] border border-[var(--border)] hover:border-[var(--muted)] transition-colors w-full text-sm"
+                                    aria-haspopup="listbox"
+                                    disabled={isUpdating}
+                                  >
                                     <StatusBadge status={suivi.statut} />
-                                  </div>
-                                  <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)] group-hover:text-[var(--foreground)] transition-colors flex-shrink-0" />
-                                </button>
+                                    <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)] flex-shrink-0" />
+                                  </button>
 
-                                {/* Dropdown menu */}
-                                {openStatusId === suivi.id && (
-                                  <>
-                                    <div className="absolute top-full left-0 mt-1.5 w-full bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 p-1 space-y-0.5">
-                                      {STATUS_OPTIONS.map((option) => (
-                                        <button
-                                          key={option.id}
-                                          onClick={() =>
-                                            handleStatusChange(suivi.id, option.id)
-                                          }
-                                          disabled={isUpdating}
-                                          className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors flex items-center justify-between gap-2 whitespace-nowrap ${
-                                            suivi.statut === option.id
-                                              ? 'bg-[var(--input)] font-semibold text-[var(--foreground)]'
-                                              : 'text-[var(--foreground)] hover:bg-[var(--input)]'
-                                          } disabled:opacity-50`}
-                                        >
-                                          <StatusBadge status={option.id} />
-                                          {/* <span className="text-[var(--muted)] text-[11px] font-normal">
-                                            {option.label} */}
-                                          {/* </span> */}
-                                        </button>
-                                      ))}
-                                    </div>
-                                    <div
-                                      className="fixed inset-0 z-40"
-                                      onClick={() => setOpenStatusId(null)}
-                                    />
-                                  </>
-                                )}
-                              </div>
+                                  {/* Dropdown menu */}
+                                  {openStatusId === suivi.id && (
+                                    <>
+                                      <div className="absolute top-full left-0 mt-1 w-44 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl z-50 p-1.5 space-y-1">
+                                        {STATUS_OPTIONS.map((option) => (
+                                          <button
+                                            key={option.id}
+                                            onClick={() =>
+                                              handleStatusChange(suivi.id, option.id)
+                                            }
+                                            disabled={isUpdating}
+                                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center justify-between ${
+                                              suivi.statut === option.id
+                                                ? 'bg-[var(--primary)] bg-opacity-15 text-[var(--foreground)] font-medium'
+                                                : 'text-[var(--foreground)] hover:bg-[var(--input)]'
+                                            } disabled:opacity-50`}
+                                          >
+                                            <StatusBadge status={option.id} />
+                                            <span className="text-xs">{option.label}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                      <div
+                                        className="fixed inset-0 z-40"
+                                        onClick={() => setOpenStatusId(null)}
+                                      />
+                                    </>
+                                  )}
+                                </div>
+                              )}
 
                               {/* Date de dépôt */}
-                              <div className="col-span-3 text-xs text-right text-[var(--muted)] whitespace-nowrap pr-1">
+                              <div className={`${isPublic ? 'hidden' : 'col-span-3'} text-xs text-right text-[var(--muted)] font-medium`}>
                                 {suivi.date_depot
                                   ? new Date(suivi.date_depot).toLocaleDateString('fr-FR')
                                   : '–'}
@@ -283,6 +290,23 @@ export function MemberDetailModal({
           </Button>
         </div>
       </div>
+
+      {/* Style CSS pour un scrollbar émincé et moderne */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: var(--border);
+          border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: var(--muted);
+        }
+      `}</style>
     </Modal>
   )
 }

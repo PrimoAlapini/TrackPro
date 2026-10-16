@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import {
-  BarChart3,
   ChevronDown,
   ChevronUp,
   FileText,
@@ -14,7 +13,6 @@ import {
 const NAV_ITEMS = [
   { label: 'Tableau de bord', href: '/', icon: LayoutDashboard },
   { label: 'Pièces du dossier', href: '/pieces', icon: FileText },
-  { label: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { label: 'Membres', href: '/membres', icon: Users },
   { label: 'Paramètres', href: '/parametres', icon: Settings },
 ]

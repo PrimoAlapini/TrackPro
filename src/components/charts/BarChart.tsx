@@ -19,10 +19,10 @@ export function BarChart({ data }: BarChartProps) {
           <div key={idx} className="space-y-1.5">
             {/* Label et pourcentage */}
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[var(--foreground)] font-medium">
+              <span className="text-[var(--foreground)] font-semibold">
                 {item.label}
               </span>
-              <span className="text-[var(--muted)] font-semibold">
+              <span className="text-[var(--muted)] font-bold">
                 {val}%
               </span>
             </div>

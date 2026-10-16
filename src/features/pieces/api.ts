@@ -17,7 +17,10 @@ export function usePieces(dossierId?: string) {
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.warn('Error fetching pieces:', error)
+        return []
+      }
       return data as Piece[]
     },
   })

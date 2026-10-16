@@ -5,16 +5,17 @@ import { queryClient } from '@/lib/queryClient'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { DossierProvider } from '@/contexts/DossierContext'
 import { DialogProvider } from '@/contexts/DialogContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { initTheme } from '@/lib/theme'
 import { Login } from '@/pages/Login'
 import { Dashboard } from '@/pages/Dashboard'
 import { Pieces } from '@/pages/Pieces'
-import { Stats } from '@/pages/Stats'
 import { Members } from '@/pages/Members'
 import { SettingsPage } from '@/pages/Settings'
 import { ComponentsTest } from '@/pages/ComponentsTest'
 import { AuthGuard } from '@/app/AuthGuard'
 import { AppLayout } from '@/app/AppLayout'
+import { PublicDashboardLayout } from '@/app/PublicDashboardLayout'
 import { DossierForm } from '@/features/dossiers/DossierForm'
 import { useCreateDossier, useDossiers } from '@/features/dossiers/api'
 
@@ -96,68 +97,74 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   )
 }
 
+
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <DossierProvider>
-            <DialogProvider>
-              <RootLayout />
-              <Routes>
-                {/* Public routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/components-test" element={<ComponentsTest />} />
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <DossierProvider>
+              <DialogProvider>
+                <RootLayout />
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/components-test" element={<ComponentsTest />} />
+                  <Route
+                    path="/public/dashboard"
+                    element={
+                      <PublicDashboardLayout>
+                        <Dashboard isPublic={true} />
+                      </PublicDashboardLayout>
+                    }
+                  />
 
-                {/* Protected routes */}
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/pieces"
-                  element={
-                    <ProtectedRoute>
-                      <Pieces />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/statistiques"
-                  element={
-                    <ProtectedRoute>
-                      <Stats />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/membres"
-                  element={
-                    <ProtectedRoute>
-                      <Members />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/parametres"
-                  element={
-                    <ProtectedRoute>
-                      <SettingsPage />
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Public dashboard - accessible without login */}
+                  <Route
+                    path="/"
+                    element={
+                      <PublicDashboardLayout>
+                        <Dashboard isPublic={true} />
+                      </PublicDashboardLayout>
+                    }
+                  />
 
-                {/* Catch all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </DialogProvider>
-          </DossierProvider>
-        </AuthProvider>
-      </BrowserRouter>
+                  {/* Protected routes */}
+                  <Route
+                    path="/pieces"
+                    element={
+                      <ProtectedRoute>
+                        <Pieces />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/membres"
+                    element={
+                      <ProtectedRoute>
+                        <Members />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/parametres"
+                    element={
+                      <ProtectedRoute>
+                        <SettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Catch all */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </DialogProvider>
+            </DossierProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
