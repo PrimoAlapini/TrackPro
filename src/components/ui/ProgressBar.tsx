@@ -21,7 +21,7 @@ export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
       <div
         ref={ref}
         className={clsx(
-          'w-full h-[7px] bg-[var(--track)] rounded-full overflow-hidden',
+          'w-full h-[4px] bg-[var(--track)] rounded-full overflow-hidden',
           className
         )}
         {...props}

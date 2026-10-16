@@ -1,16 +1,17 @@
-import { useState } from 'react'
-import { useMembers, useCreateMember, useDeleteMember } from '@/features/membres/api'
+import { useState, useMemo } from 'react'
+import { useMembers, useCreateMember, useDeleteMember, useUpdateMember as useUpdateMemberAPI } from '@/features/membres/api'
 import { useDossiers } from '@/features/dossiers/api'
 import { usePieces } from '@/features/pieces/api'
 import { useSuiviPieces, useUpdateSuiviPieceDynamic } from '@/features/suivi/api'
 import { useConfirm, useAlert } from '@/contexts/DialogContext'
 import { MemberDetailModal } from '@/features/membres/MemberDetailModal'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { MemberForm } from '@/features/membres/MemberForm'
+import { Card, CardContent } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { Spinner } from '@/components/ui/Spinner'
-import { Users, Plus, Trash2 } from 'lucide-react'
+import { Users, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
 export function Members() {
   const { data: membres = [], isLoading, error } = useMembers()
@@ -23,17 +24,63 @@ export function Members() {
   const confirm = useConfirm()
   const alert = useAlert()
 
-  const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ nom: '', couleur_avatar: 'primary' })
+  const [showMemberForm, setShowMemberForm] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [editingMember, setEditingMember] = useState<any | null>(null)
+  const [selectedDossierFilter, setSelectedDossierFilter] = useState<string | null>(null)
 
-  const handleAddMember = async (e: React.FormEvent) => {
-    e.preventDefault()
-    await createMember.mutateAsync(formData)
-    setFormData({ nom: '', couleur_avatar: 'primary' })
-    setShowForm(false)
+  // Always call hooks unconditionally, but use empty string as placeholder
+  const updateMemberHook = useUpdateMemberAPI(editingMember?.id || '')
+
+  const MEMBERS_PER_PAGE = 7
+
+  // Filtrer par recherche et dossier
+  const filteredMembers = useMemo(() => {
+    let result = membres.filter((m) =>
+      m.nom.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    // Filter by dossier if selected
+    if (selectedDossierFilter) {
+      result = result.filter((m) => {
+        const memberSuivi = allSuivi.filter((s) => s.membre_id === m.id)
+        return memberSuivi.some((s) => s.dossier_id === selectedDossierFilter)
+      })
+    }
+
+    return result
+  }, [membres, searchQuery, selectedDossierFilter, allSuivi])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredMembers.length / MEMBERS_PER_PAGE)
+  const paginatedMembers = useMemo(() => {
+    const start = (currentPage - 1) * MEMBERS_PER_PAGE
+    return filteredMembers.slice(start, start + MEMBERS_PER_PAGE)
+  }, [filteredMembers, currentPage])
+
+  const handleAddMember = async (data: any) => {
+    if (Array.isArray(data)) {
+      // Multi-add
+      for (const member of data) {
+        await createMember.mutateAsync(member)
+      }
+    } else if (editingMember) {
+      // Update
+      await updateMemberHook.mutateAsync(data)
+      setEditingMember(null)
+    } else {
+      // Single add
+      await createMember.mutateAsync(data)
+    }
+  }
+
+  const handleEditMember = (member: any) => {
+    setEditingMember(member)
+    setShowMemberForm(true)
   }
 
   const handleDeleteMember = async (id: string) => {
@@ -76,6 +123,11 @@ export function Members() {
       .slice(0, 2)
   }
 
+  const handleCloseForm = () => {
+    setShowMemberForm(false)
+    setEditingMember(null)
+  }
+
   if (error) {
     return (
       <div className="space-y-6">
@@ -116,7 +168,7 @@ export function Members() {
         </div>
         <Button
           variant="primary"
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => setShowMemberForm(true)}
           icon={<Plus className="w-4 h-4" />}
           className="w-full sm:w-auto"
         >
@@ -124,115 +176,180 @@ export function Members() {
         </Button>
       </div>
 
-      {showForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Nouveau membre</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddMember} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                  Nom
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.nom}
-                  onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--input)] text-[var(--foreground)]"
-                  placeholder="Nom du membre"
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="secondary" onClick={() => setShowForm(false)}>
-                  Annuler
-                </Button>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  isLoading={createMember.isPending}
-                >
-                  Ajouter
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      {/* Recherche et Filtres */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
+          <input
+            type="text"
+            placeholder="Rechercher un membre..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="w-full pl-10 pr-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--input)] text-[var(--foreground)]"
+          />
+        </div>
 
-      {membres.length === 0 ? (
+        {/* Filtre Dossiers */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              setSelectedDossierFilter(null)
+              setCurrentPage(1)
+            }}
+            className={`px-3 py-1 rounded-full text-sm transition-all ${
+              selectedDossierFilter === null
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--input)] text-[var(--foreground)] hover:bg-[var(--border)]'
+            }`}
+          >
+            Tous les dossiers
+          </button>
+          {dossiers.map((dossier) => (
+            <button
+              key={dossier.id}
+              onClick={() => {
+                setSelectedDossierFilter(dossier.id)
+                setCurrentPage(1)
+              }}
+              className={`px-3 py-1 rounded-full text-sm transition-all ${
+                selectedDossierFilter === dossier.id
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--input)] text-[var(--foreground)] hover:bg-[var(--border)]'
+              }`}
+            >
+              {dossier.nom}
+            </button>
+          ))}
+        </div>
+
+        {/* Compteur */}
+        <p className="text-sm text-[var(--muted)]">
+          {filteredMembers.length} membre{filteredMembers.length !== 1 ? 's' : ''} {selectedDossierFilter ? 'dans ce dossier' : ''} · <span className="font-medium">{membres.length} au total</span>
+        </p>
+      </div>
+
+      {filteredMembers.length === 0 ? (
         <Card>
           <CardContent>
             <EmptyState
               icon={<Users className="w-12 h-12" />}
               title="Aucun membre"
-              description="Commencez par ajouter des personnes à votre annuaire."
+              description={searchQuery || selectedDossierFilter ? 'Aucun membre ne correspond à votre recherche.' : 'Commencez par ajouter des personnes à votre annuaire.'}
               action={
-                <Button
-                  variant="primary"
-                  onClick={() => setShowForm(true)}
-                  icon={<Plus className="w-4 h-4" />}
-                >
-                  Ajouter un membre
-                </Button>
+                !searchQuery && !selectedDossierFilter && (
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowMemberForm(true)}
+                    icon={<Plus className="w-4 h-4" />}
+                  >
+                    Ajouter un membre
+                  </Button>
+                )
               }
             />
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent>
-            <div className="grid gap-4">
-              {membres.map((membre) => {
-                const memberSuivi = allSuivi.filter((s) => s.membre_id === membre.id)
-                const memberDossiers = dossiers.filter((d) =>
-                  memberSuivi.some((s) => s.dossier_id === d.id)
-                )
-                const memberPieces = pieces.filter((p) =>
-                  memberDossiers.some((d) => d.id === p.dossier_id)
-                )
-                const deposees = memberSuivi.filter((s) => s.statut === 'deposee').length
-                const progressPct = memberPieces.length > 0 ? Math.round((deposees / memberPieces.length) * 100) : 0
+        <>
+          <Card>
+            <CardContent>
+              <div className="grid gap-4">
+                {paginatedMembers.map((membre) => {
+                  const memberSuivi = allSuivi.filter((s) => s.membre_id === membre.id)
+                  const memberDossiers = dossiers.filter((d) =>
+                    memberSuivi.some((s) => s.dossier_id === d.id)
+                  )
+                  const memberPieces = pieces.filter((p) =>
+                    memberDossiers.some((d) => d.id === p.dossier_id)
+                  )
+                  const deposees = memberSuivi.filter((s) => s.statut === 'deposee').length
+                  const progressPct = memberPieces.length > 0 ? Math.round((deposees / memberPieces.length) * 100) : 0
 
-                return (
-                  <div
-                    key={membre.id}
-                    className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg hover:bg-[var(--input)] transition-colors cursor-pointer"
-                    onClick={() => {
-                      setSelectedMemberId(membre.id)
-                      setShowDetailModal(true)
-                    }}
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <Avatar
-                        initials={getInitials(membre.nom)}
-                        color={membre.couleur_avatar as any}
-                      />
-                      <div>
-                        <p className="font-medium text-[var(--foreground)]">{membre.nom}</p>
-                        <p className="text-xs text-[var(--muted)]">
-                          {memberDossiers.length} dossier{memberDossiers.length !== 1 ? 's' : ''} · {progressPct}% de progression
-                        </p>
+                  return (
+                    <div
+                      key={membre.id}
+                      className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg hover:bg-[var(--input)] transition-colors"
+                    >
+                      <div
+                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        onClick={() => {
+                          setSelectedMemberId(membre.id)
+                          setShowDetailModal(true)
+                        }}
+                      >
+                        <Avatar
+                          initials={getInitials(membre.nom)}
+                          color={membre.couleur_avatar as any}
+                        />
+                        <div>
+                          <p className="font-medium text-[var(--foreground)]">{membre.nom}</p>
+                          <p className="text-xs text-[var(--muted)]">
+                            {memberDossiers.length} dossier{memberDossiers.length !== 1 ? 's' : ''} · {progressPct}% de progression
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditMember(membre)
+                          }}
+                          className="p-2 text-[var(--muted)] hover:bg-[var(--primary)] hover:text-white rounded-lg transition-colors"
+                          aria-label="Modifier"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteMember(membre.id)
+                          }}
+                          className="p-2 text-[var(--muted)] hover:bg-[var(--danger)] hover:text-white rounded-lg transition-colors"
+                          aria-label="Supprimer"
+                          disabled={deleteMember.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteMember(membre.id)
-                      }}
-                      className="p-2 text-[var(--muted)] hover:bg-[var(--danger)] hover:text-white rounded-lg transition-colors"
-                      aria-label="Supprimer"
-                      disabled={deleteMember.isPending}
+                  )
+                })}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-6 border-t border-[var(--border)]">
+                  <p className="text-sm text-[var(--muted)]">
+                    Page {currentPage} sur {totalPages} · {filteredMembers.length} membre{filteredMembers.length !== 1 ? 's' : ''}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      icon={<ChevronLeft className="w-4 h-4" />}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      Précédent
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      icon={<ChevronRight className="w-4 h-4" />}
+                    >
+                      Suivant
+                    </Button>
                   </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Detail Modal */}
@@ -248,6 +365,17 @@ export function Members() {
         suiviList={allSuivi}
         onStatusChange={handleStatusChange}
         isUpdating={isUpdatingStatus}
+      />
+
+      {/* Add/Edit Member Form Modal */}
+      <MemberForm
+        isOpen={showMemberForm}
+        onClose={handleCloseForm}
+        onSubmit={handleAddMember}
+        isLoading={createMember.isPending || updateMemberHook.isPending}
+        initialData={editingMember}
+        title={editingMember ? 'Modifier le membre' : 'Ajouter un membre'}
+        isEditing={!!editingMember}
       />
     </div>
   )
