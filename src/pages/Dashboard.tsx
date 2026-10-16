@@ -15,6 +15,81 @@ import { Folder, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 
+type Counts = { deposee: number; en_cours: number; non_deposee: number; total: number }
+
+const STATUS_BARS = [
+  { key: 'deposee', label: 'Déposées', color: 'var(--success, #10B981)' },
+  { key: 'en_cours', label: 'En cours', color: 'var(--cyan, #22D3EE)' },
+  { key: 'non_deposee', label: 'Non déposées', color: 'var(--destructive, #EF4444)' },
+] as const
+
+function StatusBars({ counts }: { counts: Counts }) {
+  const items = STATUS_BARS.map((s) => {
+    const value = counts[s.key as keyof typeof counts]
+    const pct = counts.total > 0 ? Math.round((value / counts.total) * 100) : 0
+    return { ...s, value, pct }
+  })
+
+  return (
+    <div className="w-full">
+      {/* Zone du graphique : les barres partent toutes de la même ligne de base (0 %) */}
+      <div className="relative mt-12 h-56">
+        {[100, 50, 0].map((v) => (
+          <div
+            key={v}
+            aria-hidden="true"
+            className="absolute inset-x-0 flex translate-y-1/2 items-center gap-3"
+            style={{ bottom: `${v}%` }}
+          >
+            <span className="w-10 text-right text-xs text-[var(--muted-foreground)]">{v}%</span>
+            <span className="h-px flex-1 bg-[var(--border)]" />
+          </div>
+        ))}
+        <ul className="absolute inset-y-0 left-[52px] right-0 grid grid-cols-3">
+          {items.map((it) => (
+            <li key={it.key} className="relative flex justify-center">
+              <span className="sr-only">
+                {it.label} : {it.value} sur {counts.total} ({it.pct} %)
+              </span>
+              <div className="relative h-full w-14 sm:w-16" aria-hidden="true">
+                <div
+                  className="absolute inset-x-0 bottom-0 rounded-t-xl transition-[height] duration-500"
+                  style={{ height: `${it.pct}%`, backgroundColor: it.color }}
+                />
+                <div
+                  className="absolute inset-x-0 mb-1.5 flex flex-col items-center leading-tight"
+                  style={{ bottom: `${it.pct}%` }}
+                >
+                  <span className="text-lg font-bold" style={{ color: it.color }}>
+                    {it.value}
+                  </span>
+                  <span className="text-xs text-[var(--muted-foreground)]">{it.pct}%</span>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* Libellés sous chaque barre */}
+      <ul className="mt-3 grid grid-cols-3 pl-[52px]">
+        {items.map((it) => (
+          <li key={it.key} className="text-center text-sm font-medium text-[var(--foreground)]">
+            {it.label}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-5 border-t border-[var(--border)] pt-4 text-center text-sm text-[var(--muted-foreground)]">
+        Total : <span className="font-bold text-[var(--foreground)]">{counts.total} pièces</span>
+      </p>
+      {counts.total === 0 && (
+        <p className="mt-2 text-center text-sm text-[var(--muted-foreground)]">
+          Aucune pièce à suivre pour ce dossier.
+        </p>
+      )}
+    </div>
+  )
+}
+
 interface DashboardProps {
   isPublic?: boolean
 }
@@ -126,8 +201,13 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-[30px] font-bold text-[var(--foreground)]">Tableau de bord</h1>
-        <p className="text-[var(--muted)] mt-1">{activeDossier.nom}</p>
+        <h1 className="text-[30px] font-black text-[var(--foreground)]">Tableau de bord</h1>
+        <div className="mt-3 space-y-1">
+          <h2 className="text-lg font-extrabold text-[var(--foreground)]">{activeDossier.nom}</h2>
+          {activeDossier.description && (
+            <p className="text-sm text-[var(--muted)]">{activeDossier.description}</p>
+          )}
+        </div>
       </div>
 
       {/* KPI Cards - 1 col mobile, 2 tablet, 4 desktop with responsive gaps */}
@@ -315,21 +395,24 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
         </Card>
       </div>
 
-      {/* Donut chart - takes full width, centered */}
+      {/* Status distribution - Donut + Bar charts */}
       <Card>
         <CardHeader>
           <CardTitle>Répartition des statuts</CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-center overflow-x-auto">
-          <div className="flex justify-center min-w-full lg:min-w-0">
-            <Donut
-              total={counts.total}
-              segments={[
-                { value: counts.deposee, color: '#10B981', label: 'Déposées' },
-                { value: counts.en_cours, color: '#22D3EE', label: 'En cours' },
-                { value: counts.non_deposee, color: '#EF4444', label: 'Non déposées' },
-              ]}
-            />
+        <CardContent>
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+            <div className="flex justify-center">
+              <Donut
+                total={counts.total}
+                segments={[
+                  { value: counts.deposee, color: '#10B981', label: 'Déposées' },
+                  { value: counts.en_cours, color: '#22D3EE', label: 'En cours' },
+                  { value: counts.non_deposee, color: '#EF4444', label: 'Non déposées' },
+                ]}
+              />
+            </div>
+            <StatusBars counts={counts} />
           </div>
         </CardContent>
       </Card>
