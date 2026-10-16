@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { DossierProvider } from '@/contexts/DossierContext'
 import { DialogProvider } from '@/contexts/DialogContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -97,6 +97,35 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   )
 }
 
+// Home route - shows private dashboard for authenticated users, public dashboard otherwise
+function HomeRoute() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="text-[var(--foreground)]">Chargement...</div>
+      </div>
+    )
+  }
+
+  // Si connecté, affiche le dashboard privé
+  if (user) {
+    return (
+      <ProtectedRoute>
+        <Dashboard isPublic={false} />
+      </ProtectedRoute>
+    )
+  }
+
+  // Si non connecté, affiche le dashboard public
+  return (
+    <PublicDashboardLayout>
+      <Dashboard isPublic={true} />
+    </PublicDashboardLayout>
+  )
+}
+
 
 
 function App() {
@@ -121,15 +150,8 @@ function App() {
                     }
                   />
 
-                  {/* Public dashboard - accessible without login */}
-                  <Route
-                    path="/"
-                    element={
-                      <PublicDashboardLayout>
-                        <Dashboard isPublic={true} />
-                      </PublicDashboardLayout>
-                    }
-                  />
+                  {/* Home route - shows private dashboard for authenticated users, public otherwise */}
+                  <Route path="/" element={<HomeRoute />} />
 
                   {/* Protected routes */}
                   <Route

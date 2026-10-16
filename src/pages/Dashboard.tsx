@@ -11,7 +11,7 @@ import { BarChart } from '@/components/charts/BarChart'
 import { Donut } from '@/components/charts/Donut'
 import { MemberDetailModal } from '@/features/membres/MemberDetailModal'
 import { statusCounts, personProgress, pieceProgress, pieceBarColor } from '@/lib/stats'
-import { Folder, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Folder, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 
@@ -42,6 +42,8 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
   const [personCurrentPage, setPersonCurrentPage] = useState(1)
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [showMemberModal, setShowMemberModal] = useState(false)
+  const [pieceSearchQuery, setPieceSearchQuery] = useState('')
+  const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const ITEMS_PER_PAGE = 5
 
   const activeDossier = dossiers.find((d) => d.id === activeDossierId)
@@ -53,16 +55,30 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
     .map((id) => membres.find((m) => m.id === id))
     .filter(Boolean) as typeof membres
 
+  // Filter pieces by search query
+  const filteredPieces = useMemo(() => {
+    return pieces.filter((piece) =>
+      piece.nom.toLowerCase().includes(pieceSearchQuery.toLowerCase())
+    )
+  }, [pieces, pieceSearchQuery])
+
+  // Limit filtered pieces to 5, rest in scroll
+  const displayPieces = filteredPieces.slice(0, ITEMS_PER_PAGE)
+  const hasMorePieces = filteredPieces.length > ITEMS_PER_PAGE
+
+  // Filter members by search query
+  const filteredDossierMembers = useMemo(() => {
+    return dossierMembers.filter((member) =>
+      member.nom.toLowerCase().includes(memberSearchQuery.toLowerCase())
+    )
+  }, [dossierMembers, memberSearchQuery])
+
   // Pagination for persons
-  const personTotalPages = Math.ceil(dossierMembers.length / ITEMS_PER_PAGE)
+  const personTotalPages = Math.ceil(filteredDossierMembers.length / ITEMS_PER_PAGE)
   const paginatedMembers = useMemo(() => {
     const start = (personCurrentPage - 1) * ITEMS_PER_PAGE
-    return dossierMembers.slice(start, start + ITEMS_PER_PAGE)
-  }, [dossierMembers, personCurrentPage])
-
-  // Limit pieces to 5, rest in scroll
-  const displayPieces = pieces.slice(0, ITEMS_PER_PAGE)
-  const hasMorePieces = pieces.length > ITEMS_PER_PAGE
+    return filteredDossierMembers.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredDossierMembers, personCurrentPage])
 
   const getInitials = (name: string) => {
     return name
@@ -152,112 +168,150 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Piece Progress - with scroll */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg">Progression par pièce</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`${hasMorePieces ? 'overflow-y-auto max-h-96' : ''}`}>
-              <BarChart
-                data={displayPieces.map((piece) => {
-                  const progress = pieceProgress(suiviList, piece.id, dossierMembers.length)
-                  return {
-                    label: piece.nom,
-                    value: progress.percentage,
-                    color: `var(--${pieceBarColor(progress.percentage)})`,
-                  }
-                })}
+            <div className="flex items-center gap-2 bg-[var(--input)] rounded-lg px-3 py-2 w-40">
+              <Search className="w-4 h-4 text-[var(--muted)]" />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={pieceSearchQuery}
+                onChange={(e) => {
+                  setPieceSearchQuery(e.target.value)
+                  setPersonCurrentPage(1)
+                }}
+                className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--foreground)] placeholder-[var(--muted)]"
               />
             </div>
-            {hasMorePieces && (
-              <p className="text-xs text-[var(--muted)] mt-3 text-center">
-                {displayPieces.length} / {pieces.length} pièces affichées (scrollez pour plus)
-              </p>
+          </CardHeader>
+          <CardContent>
+            {displayPieces.length === 0 ? (
+              <p className="text-sm text-[var(--muted)] text-center py-4">Aucune pièce trouvée</p>
+            ) : (
+              <>
+                <div className={`${hasMorePieces ? 'overflow-y-auto max-h-96' : ''}`}>
+                  <BarChart
+                    data={displayPieces.map((piece) => {
+                      const progress = pieceProgress(suiviList, piece.id, dossierMembers.length)
+                      return {
+                        label: piece.nom,
+                        value: progress.percentage,
+                        color: `var(--${pieceBarColor(progress.percentage)})`,
+                      }
+                    })}
+                  />
+                </div>
+                {hasMorePieces && (
+                  <p className="text-xs text-[var(--muted)] mt-3 text-center">
+                    {displayPieces.length} / {filteredPieces.length} pièces affichées (scrollez pour plus)
+                  </p>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
 
         {/* Person Progress - with pagination and clickable members */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg">Progression par personne</CardTitle>
+            <div className="flex items-center gap-2 bg-[var(--input)] rounded-lg px-3 py-2 w-40">
+              <Search className="w-4 h-4 text-[var(--muted)]" />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={memberSearchQuery}
+                onChange={(e) => {
+                  setMemberSearchQuery(e.target.value)
+                  setPersonCurrentPage(1)
+                }}
+                className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--foreground)] placeholder-[var(--muted)]"
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-  <div className="space-y-3.5">
-    {paginatedMembers.map((member) => {
-      const memberSuivi = suiviList.filter((s) => s.membre_id === member.id)
-      const progress = personProgress(memberSuivi, pieces.length)
-      const validProgress = progress && progress > 0 ? progress : 0
-      const maxValue = 100
+            {paginatedMembers.length === 0 ? (
+              <p className="text-sm text-[var(--muted)] text-center py-4">Aucun membre trouvé</p>
+            ) : (
+              <>
+                <div className="space-y-3.5">
+                  {paginatedMembers.map((member) => {
+                    const memberSuivi = suiviList.filter((s) => s.membre_id === member.id)
+                    const progress = personProgress(memberSuivi, pieces.length)
+                    const validProgress = progress && progress > 0 ? progress : 0
+                    const maxValue = 100
 
-      return (
-        <div
-          key={member.id}
-          onClick={() => handleMemberClick(member.id)}
-          className="group cursor-pointer space-y-1.5 p-1 rounded-lg hover:bg-[var(--input)] transition-colors"
-        >
-          {/* Entête membre & pourcentage */}
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <Avatar
-                initials={getInitials(member.nom)}
-                color={member.couleur_avatar as any}
-                size="sm"
-              />
-              <span className="text-[var(--foreground)] font-medium group-hover:text-[var(--primary)] transition-colors">
-                {member.nom}
-              </span>
-            </div>
-            <span className="text-[var(--muted)] font-semibold">
-              {validProgress}%
-            </span>
-          </div>
+                    return (
+                      <div
+                        key={member.id}
+                        onClick={() => handleMemberClick(member.id)}
+                        className="group cursor-pointer space-y-1.5 p-1 rounded-lg hover:bg-[var(--input)] transition-colors"
+                      >
+                        {/* Entête membre & pourcentage */}
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <Avatar
+                              initials={getInitials(member.nom)}
+                              color={member.couleur_avatar as any}
+                              size="sm"
+                            />
+                            <span className="text-[var(--foreground)] font-medium group-hover:text-[var(--primary)] transition-colors">
+                              {member.nom}
+                            </span>
+                          </div>
+                          <span className="text-[var(--muted)] font-semibold">
+                            {validProgress}%
+                          </span>
+                        </div>
 
-          {/* Piste & Barre émincée */}
-          <div className="w-full h-2.5 bg-[var(--track)] rounded-full overflow-hidden p-0.5 border border-[var(--border)] border-opacity-40">
-            {validProgress > 0 && (
-              <div
-                className="h-full rounded-full transition-all duration-500 ease-out group-hover:brightness-110"
-                style={{
-                  width: `${(validProgress / maxValue) * 100}%`,
-                  backgroundColor: `var(--${member.couleur_avatar})`,
-                }}
-              />
+                        {/* Piste & Barre émincée */}
+                        <div className="w-full h-2.5 bg-[var(--track)] rounded-full overflow-hidden p-0.5 border border-[var(--border)] border-opacity-40">
+                          {validProgress > 0 && (
+                            <div
+                              className="h-full rounded-full transition-all duration-500 ease-out group-hover:brightness-110"
+                              style={{
+                                width: `${(validProgress / maxValue) * 100}%`,
+                                backgroundColor: `var(--${member.couleur_avatar})`,
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Pagination */}
+                {personTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
+                    <p className="text-xs text-[var(--muted)]">
+                      Page {personCurrentPage} / {personTotalPages} · {filteredDossierMembers.length} personne{filteredDossierMembers.length !== 1 ? 's' : ''}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setPersonCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={personCurrentPage === 1}
+                        icon={<ChevronLeft className="w-4 h-4" />}
+                      >
+                        Préc.
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setPersonCurrentPage((p) => Math.min(personTotalPages, p + 1))}
+                        disabled={personCurrentPage === personTotalPages}
+                        icon={<ChevronRight className="w-4 h-4" />}
+                      >
+                        Suiv.
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </div>
-        </div>
-      )
-    })}
-  </div>
-
-  {/* Pagination */}
-  {personTotalPages > 1 && (
-    <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
-      <p className="text-xs text-[var(--muted)]">
-        Page {personCurrentPage} / {personTotalPages} · {dossierMembers.length} personne{dossierMembers.length !== 1 ? 's' : ''}
-      </p>
-      <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setPersonCurrentPage((p) => Math.max(1, p - 1))}
-          disabled={personCurrentPage === 1}
-          icon={<ChevronLeft className="w-4 h-4" />}
-        >
-          Préc.
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setPersonCurrentPage((p) => Math.min(personTotalPages, p + 1))}
-          disabled={personCurrentPage === personTotalPages}
-          icon={<ChevronRight className="w-4 h-4" />}
-        >
-          Suiv.
-        </Button>
-      </div>
-    </div>
-  )}
-</CardContent>
+          </CardContent>
         </Card>
       </div>
 

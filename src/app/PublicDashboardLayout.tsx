@@ -33,7 +33,7 @@ export function PublicDashboardLayout({ children }: PublicDashboardLayoutProps) 
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="TrackPro Logo" className="h-8 w-8" />
+              <img src="/logo.png" alt="TrackPro Logo" className="h-10 w-auto" />
             </div>
 
             {/* Middle: Dossier selector */}

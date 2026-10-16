@@ -252,7 +252,6 @@ export function MemberDetailModal({
                                             } disabled:opacity-50`}
                                           >
                                             <StatusBadge status={option.id} />
-                                            <span className="text-xs">{option.label}</span>
                                           </button>
                                         ))}
                                       </div>
