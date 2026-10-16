@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMembers, useCreateMember, useDeleteMember } from '@/features/membres/api'
 import { useDossiers } from '@/features/dossiers/api'
 import { usePieces } from '@/features/pieces/api'
-import { useSuiviPieces, useUpdateSuiviPiece } from '@/features/suivi/api'
+import { useSuiviPieces, useUpdateSuiviPieceDynamic } from '@/features/suivi/api'
 import { useConfirm, useAlert } from '@/contexts/DialogContext'
 import { MemberDetailModal } from '@/features/membres/MemberDetailModal'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
@@ -16,18 +16,18 @@ export function Members() {
   const { data: membres = [], isLoading, error } = useMembers()
   const { data: dossiers = [] } = useDossiers()
   const { data: pieces = [] } = usePieces()
+  const { data: allSuivi = [] } = useSuiviPieces(undefined)
   const createMember = useCreateMember()
   const deleteMember = useDeleteMember()
+  const updateSuiviPiece = useUpdateSuiviPieceDynamic()
   const confirm = useConfirm()
+  const alert = useAlert()
 
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ nom: '', couleur_avatar: 'primary' })
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
-
-  // Get all suivi for selected member across all dossiers
-  const selectedMembre = membres.find((m) => m.id === selectedMemberId)
-  const { data: allSuivi = [] } = useSuiviPieces(undefined) // Get all suivi (no dossier filter)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,6 +49,24 @@ export function Members() {
     }
   }
 
+  const handleStatusChange = async (followId: string, newStatus: any) => {
+    setIsUpdatingStatus(true)
+    try {
+      await updateSuiviPiece.mutateAsync({
+        suiviId: followId,
+        update: { statut: newStatus },
+      })
+    } catch (err) {
+      await alert({
+        title: 'Erreur',
+        message: err instanceof Error ? err.message : 'Impossible de mettre à jour le statut',
+        variant: 'error',
+      })
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -57,13 +75,6 @@ export function Members() {
       .toUpperCase()
       .slice(0, 2)
   }
-
-  // Get dossiers where selected member is assigned
-  const memberDossiers = selectedMemberId
-    ? dossiers.filter((d) =>
-        allSuivi.some((s) => s.membre_id === selectedMemberId && s.dossier_id === d.id)
-      )
-    : []
 
   if (error) {
     return (
@@ -225,73 +236,19 @@ export function Members() {
       )}
 
       {/* Detail Modal */}
-      <Modal
+      <MemberDetailModal
         isOpen={showDetailModal}
         onClose={() => {
           setShowDetailModal(false)
           setSelectedMemberId(null)
         }}
-        title={selectedMembre ? `Dossiers de ${selectedMembre.nom}` : ''}
-        size="lg"
-      >
-        {selectedMembre && (
-          <div className="space-y-4">
-            {memberDossiers.length === 0 ? (
-              <p className="text-[var(--muted)] text-center py-4">Aucun dossier assigné</p>
-            ) : (
-              memberDossiers.map((dossier) => {
-                const dossierSuivi = allSuivi.filter(
-                  (s) => s.dossier_id === dossier.id && s.membre_id === selectedMemberId
-                )
-                const dossierPieces = pieces.filter((p) => p.dossier_id === dossier.id)
-                const deposees = dossierSuivi.filter((s) => s.statut === 'deposee').length
-
-                return (
-                  <div key={dossier.id} className="p-4 border border-[var(--border)] rounded-lg space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-[var(--foreground)]">{dossier.nom}</h3>
-                        <p className="text-sm text-[var(--muted)]">{dossier.description}</p>
-                      </div>
-                      <Button variant="secondary" size="sm">
-                        Voir détails
-                      </Button>
-                    </div>
-                    <div className="text-sm text-[var(--muted)]">
-                      {deposees}/{dossierPieces.length} pièces déposées
-                    </div>
-                    {dossierPieces.length > 0 && (
-                      <div className="space-y-2">
-                        {dossierPieces.map((piece) => {
-                          const suivi = dossierSuivi.find((s) => s.piece_id === piece.id)
-                          return (
-                            <div key={piece.id} className="flex justify-between items-center text-xs">
-                              <span className="text-[var(--foreground)]">{piece.nom}</span>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`px-2 py-1 rounded ${
-                                    suivi?.statut === 'deposee'
-                                      ? 'bg-[var(--badge-success-bg)] text-[var(--badge-success-fg)]'
-                                      : suivi?.statut === 'en_cours'
-                                        ? 'bg-[var(--badge-progress-bg)] text-[var(--badge-progress-fg)]'
-                                        : 'bg-[var(--badge-danger-bg)] text-[var(--badge-danger-fg)]'
-                                  }`}
-                                >
-                                  {suivi?.statut === 'deposee' ? 'Déposée' : suivi?.statut === 'en_cours' ? 'En cours' : 'Non déposée'}
-                                </span>
-                                {suivi?.date_depot && (
-                                  <span className="text-[var(--muted)]">
-                                    {new Date(suivi.date_depot).toLocaleDateString('fr-FR')}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-  
+        member={selectedMemberId ? membres.find((m) => m.id === selectedMemberId) || null : null}
+        dossiers={dossiers}
+        pieces={pieces}
+        suiviList={allSuivi}
+        onStatusChange={handleStatusChange}
+        isUpdating={isUpdatingStatus}
+      />
+    </div>
+  )
+}

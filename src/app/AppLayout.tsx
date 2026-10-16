@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { type ReactNode } from 'react'
 import { Header } from '@/components/layout/Header'
+import { FloatingMenu } from '@/components/layout/FloatingMenu'
+import { BottomNav } from '@/components/layout/BottomNav'
 
 interface AppLayoutProps {
   children: ReactNode
@@ -8,33 +9,28 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, onNewDossier }: AppLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  const handleCloseSidebar = () => setSidebarOpen(false)
-
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
-
-      {/* Backdrop for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
-          onClick={handleCloseSidebar}
-        />
-      )}
-
       {/* Header */}
       <Header
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        onMenuClick={() => {}} // Not used anymore (no sidebar toggle)
         onNewDossier={onNewDossier || (() => {})}
       />
 
-      {/* Main content */}
-      <main className="pt-16 lg:ml-64 min-h-screen bg-[var(--background)]">
+      {/* Main content - full width on desktop, with safe margins for FloatingMenu and BottomNav */}
+      <main className="pt-16 min-h-screen bg-[var(--background)] pb-[120px] lg:pb-[104px]">
         <div className="p-4 lg:p-6">{children}</div>
       </main>
+
+      {/* FloatingMenu (desktop only) */}
+      <div className="hidden lg:block">
+        <FloatingMenu />
+      </div>
+
+      {/* BottomNav (mobile only) */}
+      <div className="lg:hidden">
+        <BottomNav />
+      </div>
     </div>
   )
 }

@@ -27,9 +27,10 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   return (
     <aside
       className={clsx(
-        'fixed top-0 left-0 h-screen w-64 bg-[var(--sidebar)] border-r border-[var(--border)] flex flex-col z-30 transition-transform duration-300 lg:translate-x-0',
+        'fixed top-0 left-0 h-screen bg-[var(--sidebar)] border-r border-[var(--border)] flex flex-col z-30 transition-transform duration-300 lg:translate-x-0',
         !isOpen && '-translate-x-full'
       )}
+      style={{ width: '248px' }}
     >
       {/* Logo */}
       <div className="p-6 border-b border-[var(--border)]">

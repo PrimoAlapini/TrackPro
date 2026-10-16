@@ -54,9 +54,42 @@ Space Grotesk. Titre de page 30px/700 ; titre de carte 17px/600 ; texte 14–15p
 - **Diagramme en barres** : une colonne par pièce, % au-dessus, libellé court dessous.
 
 ## Mise en page
-- Sidebar 248px : logo, 5 entrées (Tableau de bord, Pièces du dossier, Statistiques, Membres, Paramètres), entrée active en `--primary`, carte « Chaque étape vous rapproche de votre objectif. » en bas.
-- En-tête : recherche (inactive), sélecteur « Dossier actif », cloche (inactive), menu utilisateur.
-- Mobile : sidebar en tiroir (menu hamburger), cartes empilées, tableaux avec défilement horizontal.
+
+### En-tête (Header)
+- **Gauche** : logo TrackPro (version thème), lien vers `/`.
+- **Droite**, dans l'ordre : 
+  1. Sélecteur « Dossier actif » (libellé gris « Dossier actif » + nom du dossier · TRK-xxx + chevron), menu déroulant avec liste des dossiers.
+  2. Cloche (inactive en V1).
+  3. Menu utilisateur (avatar + libellé « Admin » + chevron) : bascule thème (Système/Clair/Sombre) + « Se déconnecter ».
+- **Barre de recherche** : supprimée (R12).
+- **Mobile (<768px)** : sélecteur compact (TRK-xxx + chevron), cloche, avatar seul (pas de libellé « Admin »).
+
+### FloatingMenu (Desktop ≥768px)
+- **Position** : fixe, bas-droit (32px des bords), hauteur 52px, fond `--card`, bordure 1px `--border`, rayon 16px, ombre.
+- **État replié** : poignée grip (aria-label="Déplacer le menu"), pastille avec icône page courante, libellé « Menu », chevron vers le haut.
+- **Clic → Panneau drop-up** : largeur 248px, s'ouvre VERS LE HAUT juste au-dessus de la barre, 5 entrées (Tableau de bord, Pièces du dossier, Statistiques, Membres, Paramètres), entrée active fond `--primary` + texte blanc, chevron passe vers le bas.
+- **Fermeture** : clic extérieur, Échap, ou clic sur entrée.
+- **DRAGGABLE** : glisser la poignée (PointerEvents ou dnd-kit). Reste dans la fenêtre (clamp aux bords). Position mémorisée en localStorage (try/catch). Redimensionnement fenêtre → position recadrée pour rester visible.
+- **Placement du panneau** : s'ouvre vers le HAUT par défaut ; s'il n'y a pas de place (menu en haut), s'ouvre vers le BAS.
+- **Accessibilité** : bouton aria-expanded, panneau role="navigation" aria-label="Navigation principale", poignée aria-label="Déplacer le menu", déplacement au clavier (flèches si poignée focus).
+
+### BottomNav (Mobile <768px)
+- **Position** : fixe en bas, pleine largeur, hauteur 72px, fond `--card`, bordure haute 1px `--border`.
+- **Contenu** : 5 icônes seulement (pas de texte), alignées horizontalement, réparties à égalité (100% ÷ 5).
+- **Icône active** : pastille `--primary`, rayon 12px, 48×40px, icône blanche.
+- **Icônes inactives** : texte `--muted`.
+- **Chaque icône** : aria-label, pas de texte visible.
+- **Pas de drag**.
+- **Padding-bottom du contenu** : 72px (hauteur BottomNav) + 16px + env(safe-area-inset-bottom).
+
+### Contenu principal
+- **Sidebar supprimée** : contenu prend toute la largeur.
+- **Padding-bottom** : ≥104px (FloatingMenu height 52px + 2×32px + gap) sur desktop ; 72px + 16px + safe-area sur mobile.
+
+### Responsive général
+- **Cartes** : empilées sur mobile, grille sur desktop.
+- **Tableaux** : défilement horizontal si nécessaire.
+- **Breakpoints** : <768px = mobile (BottomNav) ; ≥768px = desktop (FloatingMenu).
 
 ## Logo
 Le client fournit une version transparente. Fichiers attendus dans `public/` : `logo.svg` (ou `.png`) pour fond sombre et `logo-light.svg` (ou `.png`) pour fond clair ; afficher l'un ou l'autre selon le thème. Ne jamais redessiner le logo en code.

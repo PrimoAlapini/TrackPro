@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useAlert } from '@/contexts/DialogContext'
+import { pieceBarColor } from '@/lib/stats'
 import type { Database } from '@/types/database'
 
 type Membre = Database['public']['Tables']['membres']['Row']
@@ -102,7 +103,7 @@ export function MemberDetailModal({
             <div className="mt-3 space-y-1">
               <div className="h-2 bg-[var(--track)] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[var(--primary)] transition-all duration-300"
+                  className={`h-full transition-all duration-300 bg-[var(--${pieceBarColor(globalPct)})]`}
                   style={{ width: `${globalPct}%` }}
                 />
               </div>
@@ -160,7 +161,7 @@ export function MemberDetailModal({
                   <div className="space-y-1">
                     <div className="h-2 bg-[var(--track)] rounded-full overflow-hidden">
                       <div
-                        className={`h-full transition-all duration-300 bg-[var(--${member.couleur_avatar})]`}
+                        className={`h-full transition-all duration-300 bg-[var(--${pieceBarColor(dossierPct)})]`}
                         style={{ width: `${dossierPct}%` }}
                       />
                     </div>

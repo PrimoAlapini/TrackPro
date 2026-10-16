@@ -53,8 +53,10 @@ export function useCreatePiece() {
       if (error) throw error
       return data as Piece
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['pieces'] })
+      queryClient.invalidateQueries({ queryKey: ['suivi', data.dossier_id] })
+      queryClient.invalidateQueries({ queryKey: ['suivi'] })
     },
   })
 }

@@ -47,6 +47,41 @@ export function useUpdateSuiviPiece(suiviId: string) {
   })
 }
 
+/**
+ * Update suivi piece with ID passed in mutation (not hook init)
+ * Useful when ID is dynamic/unknown at hook call time
+ */
+export function useUpdateSuiviPieceDynamic() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      suiviId,
+      update,
+    }: {
+      suiviId: string
+      update: Database['public']['Tables']['suivi_pieces']['Update']
+    }) => {
+      if (!suiviId) throw new Error('Suivi ID is required')
+      const { data, error } = await supabase
+        .from('suivi_pieces')
+        .update(update)
+        .eq('id', suiviId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data as SuiviPiece
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['suivi', data.dossier_id] })
+      queryClient.invalidateQueries({ queryKey: ['suivi'] })
+      queryClient.invalidateQueries({ queryKey: ['dossiers'] })
+      queryClient.invalidateQueries({ queryKey: ['membres'] })
+    },
+  })
+}
+
 export function useAddMemberToDossier() {
   const queryClient = useQueryClient()
 
@@ -64,9 +99,12 @@ export function useAddMemberToDossier() {
 
       if (error) throw error
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dossiers'] })
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['suivi', variables.dossierId] })
       queryClient.invalidateQueries({ queryKey: ['suivi'] })
+      queryClient.invalidateQueries({ queryKey: ['dossiers'] })
+      queryClient.invalidateQueries({ queryKey: ['dossier_members', variables.dossierId] })
+      queryClient.invalidateQueries({ queryKey: ['membres'] })
     },
   })
 }
@@ -90,9 +128,12 @@ export function useRemoveMemberFromDossier() {
 
       if (error) throw error
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dossiers'] })
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['suivi', variables.dossierId] })
       queryClient.invalidateQueries({ queryKey: ['suivi'] })
+      queryClient.invalidateQueries({ queryKey: ['dossiers'] })
+      queryClient.invalidateQueries({ queryKey: ['dossier_members', variables.dossierId] })
+      queryClient.invalidateQueries({ queryKey: ['membres'] })
     },
   })
 }

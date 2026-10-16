@@ -14,18 +14,19 @@ Après chaque tâche : comparer avec l'image correspondante de `docs/maquettes/`
   - [ ] 3.1 Créer les migrations à partir de `design.md` et les valider avec `supabase db reset`
   - [ ] 3.2 Activer la RLS, désactiver les inscriptions publiques, créer le compte admin
   - [ ] 3.3 Générer `src/types/database.ts` et créer `lib/supabase.ts` avec les variables d'environnement
-- [ ] 4. **Connexion et layout** (R1, R11, R12)
-  - [ ] 4.1 Page Login (logo selon le thème) et AuthGuard
-  - [ ] 4.2 AppLayout : Sidebar, Header (recherche et cloche inactives), UserMenu (thème, déconnexion)
-  - [ ] 4.3 Version mobile : sidebar en tiroir
-- [ ] 5. **Paramètres et Membres** (R3, R4)
-  - [ ] 5.1 CRUD du catalogue de pièces avec réordonnancement et confirmation de suppression
-  - [ ] 5.2 Changement de mot de passe dans l'encart Compte
-  - [ ] 5.3 CRUD des membres avec couleur d'avatar
-- [ ] 6. **Dossiers** (R5)
-  - [ ] 6.1 DossierFormModal (création et modification) avec validation zod
-  - [ ] 6.2 Sélecteur de dossier actif dans l'en-tête, modification et suppression confirmée
-  - [ ] 6.3 Affectation des personnes avec création d'un membre à la volée
+- [x] 4. **Connexion et layout** (R1, R11, R12)
+  - [x] 4.1 Page Login (logo selon le thème) et AuthGuard
+  - [x] 4.2 AppLayout : FloatingMenu (desktop, fixed bottom-right, draggable, localStorage), Header (recherche supprimée, "Dossier actif" label + TRK-xxx code, UserMenu avec "Admin" label + chevron)
+  - [x] 4.3 Version mobile : BottomNav (fixed bottom 72px, 5 icônes, pill active 48x40 rayon 12)
+- [x] 5. **Paramètres et Membres** (R3, R4)
+  - [x] 5.1 ~~CRUD du catalogue de pièces~~ (déplacé au niveau Dossier, non disponible en Paramètres)
+  - [x] 5.2 Changement de mot de passe dans l'encart Compte
+  - [x] 5.3 CRUD des membres avec couleur d'avatar
+  - [x] 5.4 Section Dossiers : liste tous les dossiers, actions (Activer/Modifier/Supprimer), création avec modal
+- [x] 6. **Dossiers** (R5)
+  - [x] 6.1 DossierFormModal (création et modification) avec validation zod
+  - [x] 6.2 Sélecteur de dossier actif dans l'en-tête (version desktop full, mobile TRK-xxx), modification et suppression confirmée (dans Paramètres > Dossiers)
+  - [x] 6.3 Affectation des personnes avec création d'un membre à la volée
 - [ ] 7. **Suivi des pièces** (R6, R7)
   - [ ] 7.1 PieceStatusModal (description seulement si elle existe, sélecteur de statut)
   - [ ] 7.2 Page « Pièces du dossier » avec choix de la personne
@@ -36,5 +37,5 @@ Après chaque tâche : comparer avec l'image correspondante de `docs/maquettes/`
   - [ ] 8.4 Page Tableau de bord, page Statistiques
 - [ ] 9. **Finitions** (R10, R11)
   - [ ] 9.1 États vides, chargement et erreurs sur tous les écrans
-  - [ ] 9.2 Passage responsive mobile sur tous les écrans
-  - [ ] 9.3 Revue finale : fidélité aux maquettes, accessibilité, thème clair et sombre
+  - [x] 9.2 Passage responsive mobile sur tous les écrans (BottomNav <768px, FloatingMenu >=768px, Header responsive)
+  - [ ] 9.3 Revue finale : fidélité aux maquettes (02, 05, 06, 10), accessibilité, thème clair et sombre

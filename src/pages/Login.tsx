@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card, CardContent } from '@/components/ui/Card'
+import { Mail, Lock } from 'lucide-react'
 
 export function Login() {
   const navigate = useNavigate()
@@ -46,61 +46,70 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--background)] px-4 py-6 lg:py-12">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-6 lg:py-12">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex justify-center mb-6 lg:mb-8">
-          <img
-            src={
-              document.documentElement.classList.contains('dark')
-                ? '/logo.svg'
-                : '/logo-light.svg'
-            }
-            alt="TrackPro"
-            className="h-12 w-auto"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
-        </div>
+        {/* Card with border */}
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-[20px] p-8 space-y-6">
+          {/* Logo + Tagline */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-3">
+              <img
+                src="/logo.png"
+                alt="TrackPro"
+                className="h-15 w-auto"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            </div>
+            {/* <p className="text-center text-sm text-[var(--muted)]">
+              Vos dossiers, notre priorité
+            </p> */}
+          </div>
 
-        {/* Title */}
-        <h1 className="text-2xl lg:text-3xl font-bold text-center text-[var(--foreground)] mb-2">
-          TrackPro
-        </h1>
-        <p className="text-center text-[var(--muted)] mb-6 lg:mb-8 text-sm lg:text-base">
-          Vos dossiers, notre priorité
-        </p>
+          {/* Title + Subtitle */}
+          <div className="space-y-2 text-center">
+            <h2 className="text-3xl font-bold text-[var(--foreground)]">Connexion</h2>
+            <p className="text-sm text-[var(--muted)]">
+              Accès réservé à l'administrateur
+            </p>
+          </div>
 
-        {/* Form Card */}
-        <Card>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-[var(--foreground)] mb-2"
-                >
-                  Email
-                </label>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-semibold text-[var(--foreground)] mb-2"
+              >
+                Adresse e-mail
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--muted)]" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@example.com"
+                  placeholder="vous@exemple.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
                   required
+                  className="pl-10"
                 />
               </div>
+            </div>
 
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-[var(--foreground)] mb-2"
-                >
-                  Mot de passe
-                </label>
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-semibold text-[var(--foreground)] mb-2"
+              >
+                Mot de passe
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--muted)]" />
                 <Input
                   id="password"
                   type="password"
@@ -109,31 +118,34 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   required
+                  className="pl-10"
                 />
               </div>
+            </div>
 
-              {error && (
-                <div className="bg-[var(--danger)] bg-opacity-10 border border-[var(--danger)] text-[var(--danger)] px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
+            {/* Error Message */}
+            {error && (
+              <div className="bg-[var(--danger)] bg-opacity-10 border border-[var(--danger)] text-[var(--danger)] px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full"
-                isLoading={isLoading}
-              >
-                {isLoading ? 'Connexion...' : 'Se connecter'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full h-12 text-base font-semibold rounded-[12px]"
+              isLoading={isLoading}
+            >
+              {isLoading ? 'Connexion...' : 'Se connecter'}
+            </Button>
+          </form>
 
-        {/* Help text */}
-        <p className="text-center text-xs text-[var(--muted)] mt-4 lg:mt-6">
-          Cette plateforme est réservée aux administrateurs autorisés.
-        </p>
+          {/* Footer Text */}
+          <p className="text-center text-xs text-[var(--muted)]">
+            Ensemble vers la réussite.
+          </p>
+        </div>
       </div>
     </div>
   )

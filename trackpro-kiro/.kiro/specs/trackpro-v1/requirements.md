@@ -74,9 +74,13 @@ Contexte et règles métier : voir `.kiro/steering/product.md`.
 ### R11. États vides, chargement, erreurs
 - La plateforme démarre vide : chaque écran propose une action (« Créer un dossier », « Ajouter un membre », « Ajouter une pièce »).
 - Des états de chargement et d'erreur en français sont présents.
+- Page Paramètres : section « Dossiers » liste TOUS les dossiers, chacun avec nom, TRK-xxx, badge « Dossier actif » (si applicable), description, grille d'infos (Début, Date limite, Responsable de collecte, Responsable de revue), avatars des membres + n personnes + n pièces, barre globale (déposées ÷ total suivi) + %.
+- Actions par dossier : bouton « Activer » (vert/disabled si dossier actif, change le dossier sinon), crayon « Modifier » (DossierFormModal pré-rempli), poubelle « Supprimer » (ConfirmDialog avertit que pièces et suivi seront aussi supprimés). Aucune boîte native.
+- Si dossier actif supprimé : bascule vers premier dossier restant, ou EmptyState « Créer un dossier » s'il n'en reste plus.
 
-### R12. Responsive
-- Desktop et mobile : sidebar en tiroir, cartes empilées, tableaux avec défilement horizontal.
-
-### R13. Éléments inactifs
-- La barre de recherche et la cloche sont visibles mais non fonctionnelles en V1.
+### R12. Responsive et navigation
+- **En-tête** : logo (lien `/`), sélecteur « Dossier actif » (libellé + nom · TRK-xxx + chevron), cloche, menu utilisateur (avatar + « Admin » + chevron).
+- **Barre de recherche** : supprimée.
+- **Desktop (≥768px)** : FloatingMenu fixe bas-droit (32px des bords), hauteur 52px, replié (grip + pastille icon + « Menu » + chevron ↑), clic → panneau drop-up 248px (5 entrées), draggable (localStorage), panel s'ouvre vers LE HAUT (ou BAS si pas de place). Accessibilité : aria-expanded, role="navigation", aria-label, déplacement clavier.
+- **Mobile (<768px)** : BottomNav fixe en bas, pleine largeur, 72px, 5 icônes seulement (pas de texte), icône active = pastille primary 48×40 rayon 12. Padding-bottom contenu = 72px + 16px + safe-area. Pas de drag.
+- Cartes empilées mobile, grille desktop. Tableaux défilement horizontal si nécessaire.

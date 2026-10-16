@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { CheckCircle2, Clock, FileText } from 'lucide-react'
@@ -48,8 +49,10 @@ export function PieceStatusModal({
   onSubmit,
   isLoading = false,
 }: PieceStatusModalProps) {
-  const handleStatusChange = async (newStatus: SuiviStatut) => {
-    await onSubmit(newStatus)
+  const [selectedStatus, setSelectedStatus] = useState<SuiviStatut>(currentStatus)
+
+  const handleConfirm = async () => {
+    await onSubmit(selectedStatus)
     onClose()
   }
 
@@ -79,11 +82,11 @@ export function PieceStatusModal({
           <div className="space-y-2">
             {STATUS_OPTIONS.map((option) => {
               const Icon = option.icon
-              const isSelected = currentStatus === option.id
+              const isSelected = selectedStatus === option.id
               return (
                 <button
                   key={option.id}
-                  onClick={() => handleStatusChange(option.id as SuiviStatut)}
+                  onClick={() => setSelectedStatus(option.id as SuiviStatut)}
                   disabled={isLoading}
                   className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 transition-colors text-left ${
                     isSelected
@@ -123,7 +126,7 @@ export function PieceStatusModal({
           <Button
             type="button"
             variant="primary"
-            onClick={() => handleStatusChange(currentStatus)}
+            onClick={handleConfirm}
             disabled={isLoading}
             isLoading={isLoading}
           >

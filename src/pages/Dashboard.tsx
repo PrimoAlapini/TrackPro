@@ -62,7 +62,13 @@ export function Dashboard() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-[var(--muted)] text-sm mb-3">Total des pièces</p>
-            <p className="text-3xl font-bold text-[var(--foreground)]">{counts.total}</p>
+            <p className="text-3xl font-bold text-[var(--foreground)]">{pieces.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-[var(--muted)] text-sm mb-3">Membres assignés</p>
+            <p className="text-3xl font-bold text-[var(--foreground)]">{dossierMembers.length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -71,15 +77,6 @@ export function Dashboard() {
             <div className="flex items-baseline gap-2">
               <p className="text-3xl font-bold text-[var(--success)]">{counts.deposee}</p>
               <p className="text-sm text-[var(--muted)]">{counts.deposee_pct}%</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-[var(--muted)] text-sm mb-3">En cours</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-[var(--secondary)]">{counts.en_cours}</p>
-              <p className="text-sm text-[var(--muted)]">{counts.en_cours_pct}%</p>
             </div>
           </CardContent>
         </Card>
