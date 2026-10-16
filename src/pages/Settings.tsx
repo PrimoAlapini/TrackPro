@@ -109,7 +109,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 lg:space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-[30px] font-bold text-[var(--foreground)]">Paramètres</h1>

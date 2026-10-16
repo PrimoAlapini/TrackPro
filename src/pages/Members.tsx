@@ -158,7 +158,7 @@ export function Members() {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 lg:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-[30px] font-bold text-[var(--foreground)]">Membres</h1>

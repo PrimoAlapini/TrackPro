@@ -198,7 +198,7 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
   const counts = statusCounts(suiviList)
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-[30px] font-black text-[var(--foreground)]">Tableau de bord</h1>
