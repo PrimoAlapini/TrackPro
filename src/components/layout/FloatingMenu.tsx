@@ -56,14 +56,19 @@ export function FloatingMenu() {
     if (!containerRef.current || !isOpen) return
 
     const rect = containerRef.current.getBoundingClientRect()
+    const menuBarHeight = 52 // Fixed height of menu bar
     const panelHeight = 48 * NAV_ITEMS.length + 16 // 48px per item + padding
-    const spaceAbove = rect.top
-    const spaceBelow = window.innerHeight - rect.bottom
+    
+    // Calculate space based on menu bar position (not the full container which includes panel)
+    const menuBarTop = rect.top
+    const menuBarBottom = menuBarTop + menuBarHeight
+    
+    const spaceAbove = menuBarTop
+    const spaceBelow = window.innerHeight - menuBarBottom
 
-    // When menu is at BOTTOM: open UP (panelDirection = 'up')
-    // When menu is at TOP: open DOWN (panelDirection = 'down')
-    // So: if spaceAbove > spaceBelow → menu is at bottom → open up
-    setPanelDirection(spaceAbove > spaceBelow ? 'up' : 'down')
+    // When menu is at BOTTOM: spaceBelow is SMALL, spaceAbove is LARGE → open UP
+    // When menu is at TOP: spaceAbove is SMALL, spaceBelow is LARGE → open DOWN
+    setPanelDirection(spaceBelow < panelHeight ? 'up' : 'down')
   }, [isOpen, position])
 
   // Handle mouse drag
@@ -101,8 +106,6 @@ export function FloatingMenu() {
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isDragging, dragOffset])
     }
   }, [isDragging, dragOffset])
 
