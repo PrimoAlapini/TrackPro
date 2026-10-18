@@ -8,14 +8,14 @@ export function getSystemTheme(): 'light' | 'dark' {
 
 export function getCurrentTheme(): Theme {
   const stored = localStorage.getItem('theme') as Theme | null
-  return stored ?? 'system'
+  return stored ?? 'dark'
 }
 
 export function applyTheme(theme: Theme): void {
   const html = document.documentElement
 
   if (theme === 'system') {
-    localStorage.removeItem('theme')
+    localStorage.setItem('theme', 'system')
     const isDark = getSystemTheme() === 'dark'
     html.classList.toggle('dark', isDark)
   } else {
