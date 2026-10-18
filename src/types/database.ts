@@ -38,6 +38,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       pieces: {
         Row: {
@@ -70,6 +71,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       membres: {
         Row: {
@@ -96,6 +98,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       dossier_membres: {
         Row: {
@@ -113,6 +116,7 @@ export type Database = {
           membre_id?: string
           created_at?: string
         }
+        Relationships: []
       }
       suivi_pieces: {
         Row: {
@@ -145,7 +149,20 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }

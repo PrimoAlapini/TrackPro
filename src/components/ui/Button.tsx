@@ -31,7 +31,7 @@ const buttonVariants = cva(
 interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  children: ReactNode
+  children?: ReactNode
   isLoading?: boolean
   icon?: ReactNode
 }
