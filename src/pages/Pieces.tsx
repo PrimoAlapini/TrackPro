@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, FileText, GripVertical, Edit2, Trash2, Users, Search } from 'lucide-react'
+import { Eye, FileText, GripVertical, Edit2, Trash2, Users, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useDossier } from '@/contexts/DossierContext'
 import { usePieces, useCreatePiece, useUpdatePiece, useDeletePiece, useUpdatePiecesOrder } from '@/features/pieces/api'
 import { useSuiviPieces, useUpdateSuiviPieceDynamic, useAddMemberToDossier, useRemoveMemberFromDossier, useDossierMembers } from '@/features/suivi/api'
@@ -13,13 +13,15 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { DocumentLoader } from '@/components/ui/DocumentLoader'
 import { useConfirm, useAlert } from '@/contexts/DialogContext'
-import { Spinner } from '@/components/ui/Spinner'
 import { pieceBarColor } from '@/lib/stats'
 import type { Database } from '@/types/database'
 
 type SuiviPiece = Database['public']['Tables']['suivi_pieces']['Row']
 type DossierMembre = Database['public']['Tables']['dossier_membres']['Row']
+
+const PIECES_PER_PAGE = 5
 
 export function Pieces() {
   const { activeDossierId } = useDossier()
@@ -50,6 +52,7 @@ export function Pieces() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [draggedPieceId, setDraggedPieceId] = useState<string | null>(null)
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
+  const [pieceCurrentPage, setPieceCurrentPage] = useState(1)
 
   const activeDossier = dossiers.find((d) => d.id === activeDossierId)
   const assignedMembers = dossierMembres.map((dm) => ({
@@ -64,6 +67,11 @@ export function Pieces() {
   const filteredDossierMembers = dossierMembers.filter((m) =>
     m.nom.toLowerCase().includes(memberSearchQuery.toLowerCase())
   )
+
+  // Pagination pour les pièces
+  const totalPiecePages = Math.ceil(pieces.length / PIECES_PER_PAGE)
+  const startIndex = (pieceCurrentPage - 1) * PIECES_PER_PAGE
+  const paginatedPieces = pieces.slice(startIndex, startIndex + PIECES_PER_PAGE)
 
   // Select first member by default
   const memberId = selectedMemberId || dossierMembres[0]
@@ -172,12 +180,10 @@ export function Pieces() {
   const handleCreateAndAssignMember = async (name: string) => {
     if (!activeDossierId) return
     try {
-      // Crée le nouveau membre
       const newMember = await createMember.mutateAsync({
         nom: name,
         couleur_avatar: 'primary',
       })
-      // L'assigne automatiquement au dossier
       await addMemberToDossier.mutateAsync({
         dossierId: activeDossierId,
         memberId: newMember.id,
@@ -220,7 +226,7 @@ export function Pieces() {
         </div>
         <Card>
           <CardContent className="flex justify-center py-12">
-            <Spinner size="lg" />
+            <DocumentLoader size="lg" />
           </CardContent>
         </Card>
       </div>
@@ -238,7 +244,7 @@ export function Pieces() {
       {/* Pieces Management Section */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <CardTitle>Gestion des pièces</CardTitle>
+          <CardTitle>Gestion des pièces ({pieces.length})</CardTitle>
           <Button
             variant="primary"
             size="sm"
@@ -268,46 +274,80 @@ export function Pieces() {
               }
             />
           ) : (
-            <div className="space-y-2">
-              {pieces.map((piece) => (
-                <div
-                  key={piece.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, piece.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, piece.id)}
-                  className={`flex items-center gap-3 p-3 rounded-lg border border-[var(--border)] cursor-move transition-colors ${
-                    draggedPieceId === piece.id ? 'opacity-50 bg-[var(--input)]' : 'hover:bg-[var(--input)]'
-                  }`}
-                >
-                  <GripVertical className="w-5 h-5 text-[var(--muted)] flex-shrink-0" />
-                  <div className="flex-1 text-left">
-                    <p className="font-medium text-[var(--foreground)]">{piece.nom}</p>
-                    {piece.description && (
-                      <p className="text-sm text-[var(--muted)]">{piece.description}</p>
-                    )}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {paginatedPieces.map((piece) => (
+                  <div
+                    key={piece.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, piece.id)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, piece.id)}
+                    className={`flex items-center gap-3 p-3 rounded-lg border border-[var(--border)] cursor-move transition-colors ${
+                      draggedPieceId === piece.id ? 'opacity-50 bg-[var(--input)]' : 'hover:bg-[var(--input)]'
+                    }`}
+                  >
+                    <GripVertical className="w-5 h-5 text-[var(--muted)] flex-shrink-0" />
+                    <div className="flex-1 text-left">
+                      <p className="font-medium text-[var(--foreground)]">{piece.nom}</p>
+                      {piece.description && (
+                        <p className="text-sm text-[var(--muted)]">{piece.description}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedPiece(piece)
+                          setShowPieceModal(true)
+                        }}
+                        className="p-1 text-[var(--muted)] hover:bg-[var(--primary)] hover:text-white rounded-lg transition-colors"
+                        aria-label="Modifier"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePiece(piece.id)}
+                        className="p-1 text-[var(--muted)] hover:bg-[var(--danger)] hover:text-white rounded-lg transition-colors"
+                        aria-label="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedPiece(piece)
-                        setShowPieceModal(true)
-                      }}
-                      className="p-1 text-[var(--muted)] hover:bg-[var(--primary)] hover:text-white rounded-lg transition-colors"
-                      aria-label="Modifier"
+                ))}
+              </div>
+
+              {/* Pagination des pièces */}
+              {totalPiecePages > 1 && (
+                <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-sm">
+                  <span className="text-[var(--muted)]">
+                    Affichage {startIndex + 1}-{Math.min(startIndex + PIECES_PER_PAGE, pieces.length)} sur {pieces.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setPieceCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={pieceCurrentPage === 1}
+                      icon={<ChevronLeft className="w-4 h-4" />}
                     >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeletePiece(piece.id)}
-                      className="p-1 text-[var(--muted)] hover:bg-[var(--danger)] hover:text-white rounded-lg transition-colors"
-                      aria-label="Supprimer"
+                      Précédent
+                    </Button>
+                    <span className="text-[var(--foreground)] font-medium px-2">
+                      {pieceCurrentPage} / {totalPiecePages}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setPieceCurrentPage((p) => Math.min(p + 1, totalPiecePages))}
+                      disabled={pieceCurrentPage === totalPiecePages}
+                      icon={<ChevronRight className="w-4 h-4" />}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      Suivant
+                    </Button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </CardContent>
@@ -353,7 +393,6 @@ export function Pieces() {
                   value={memberSearchQuery}
                   onChange={(e) => {
                     setMemberSearchQuery(e.target.value)
-                    // Si le membre actuellement sélectionné n'est pas dans les résultats filtrés, déselectionner
                     if (!filteredDossierMembers.find((m) => m.id === memberId)) {
                       setSelectedMemberId(filteredDossierMembers[0]?.id || null)
                     }
@@ -362,30 +401,32 @@ export function Pieces() {
                 />
               </div>
 
-              {/* Member tabs */}
-              <div className="flex flex-wrap gap-2">
-                {filteredDossierMembers.length === 0 ? (
-                  <p className="text-sm text-[var(--muted)] w-full text-center py-2">Aucun membre trouvé</p>
-                ) : (
-                  filteredDossierMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      onClick={() => setSelectedMemberId(member.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors font-medium text-sm ${
-                        memberId === member.id
-                          ? 'bg-[var(--primary)] text-white'
-                          : 'bg-[var(--input)] text-[var(--foreground)] hover:opacity-70'
-                      }`}
-                    >
-                      <Avatar
-                        initials={getInitials(member.nom)}
-                        color={member.couleur_avatar as any}
-                        size="sm"
-                      />
-                      {member.nom}
-                    </button>
-                  ))
-                )}
+              {/* Member tabs with scroll */}
+              <div className="max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="flex flex-wrap gap-2">
+                  {filteredDossierMembers.length === 0 ? (
+                    <p className="text-sm text-[var(--muted)] w-full text-center py-2">Aucun membre trouvé</p>
+                  ) : (
+                    filteredDossierMembers.map((member) => (
+                      <button
+                        key={member.id}
+                        onClick={() => setSelectedMemberId(member.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors font-medium text-sm ${
+                          memberId === member.id
+                            ? 'bg-[var(--primary)] text-white'
+                            : 'bg-[var(--input)] text-[var(--foreground)] hover:opacity-70'
+                        }`}
+                      >
+                        <Avatar
+                          initials={getInitials(member.nom)}
+                          color={member.couleur_avatar as any}
+                          size="sm"
+                        />
+                        {member.nom}
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
               
               {/* Selected member progress */}
@@ -542,6 +583,23 @@ export function Pieces() {
         onSubmit={handleUpdateStatus}
         isLoading={updateSuiviPiece.isPending}
       />
+
+      {/* Style CSS pour la scrollbar fine */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: var(--border);
+          border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: var(--muted);
+        }
+      `}</style>
     </div>
   )
 }
