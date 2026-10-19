@@ -86,7 +86,7 @@ export function MemberDetailModal({
       isOpen={isOpen}
       onClose={onClose}
       title=""
-      size="xl" // Augmentation de la largeur du modal
+      size="lg"
     >
       <div className="space-y-6">
         {/* Header */}

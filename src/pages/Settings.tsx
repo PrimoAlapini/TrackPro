@@ -283,14 +283,18 @@ export function SettingsPage() {
                         }}
                         disabled={deleteDossier.isPending}
                         icon={<Edit2 className="w-4 h-4" />}
-                      />
+                      >
+                        Modifier
+                      </Button>
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={() => handleDeleteDossier(dossier)}
                         disabled={deleteDossier.isPending}
                         icon={<Trash2 className="w-4 h-4 text-[var(--danger)]" />}
-                      />
+                      >
+                        Supprimer
+                      </Button>
                     </div>
                   </div>
                 )

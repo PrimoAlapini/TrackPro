@@ -98,7 +98,7 @@ export function MemberAssignmentModal({
         message: confirmMessage || 'Aucun changement à appliquer',
         confirmText: 'Valider',
         cancelText: 'Annuler',
-        variant: 'primary',
+        variant: 'normal',
       })
 
       if (!confirmed) {

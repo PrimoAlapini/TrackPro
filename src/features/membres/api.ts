@@ -44,8 +44,7 @@ export function useCreateMember() {
 
   return useMutation({
     mutationFn: async (membre: MembreInsert) => {
-      const { data, error } = await supabase
-        .from('membres')
+      const { data, error } = await (supabase.from('pieces') as any)
         .insert([membre])
         .select()
         .single()
@@ -65,8 +64,7 @@ export function useUpdateMember(id: string) {
   return useMutation({
     mutationFn: async (membre: Database['public']['Tables']['membres']['Update']) => {
       if (!id) throw new Error('Member ID is required')
-      const { data, error } = await supabase
-        .from('membres')
+      const { data, error } = await (supabase.from('pieces') as any)
         .update(membre)
         .eq('id', id)
         .select()

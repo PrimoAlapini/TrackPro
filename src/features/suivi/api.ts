@@ -34,8 +34,7 @@ export function useUpdateSuiviPiece(suiviId: string) {
       update: Database['public']['Tables']['suivi_pieces']['Update']
     ) => {
       if (!suiviId) throw new Error('Suivi ID is required')
-      const { data, error } = await supabase
-        .from('suivi_pieces')
+      const { data, error } = await (supabase.from('suivi_pieces') as any)
         .update(update)
         .eq('id', suiviId)
         .select()
@@ -66,8 +65,7 @@ export function useUpdateSuiviPieceDynamic() {
       update: Database['public']['Tables']['suivi_pieces']['Update']
     }) => {
       if (!suiviId) throw new Error('Suivi ID is required')
-      const { data, error } = await supabase
-        .from('suivi_pieces')
+      const { data, error } = await (supabase.from('suivi_pieces') as any)
         .update(update)
         .eq('id', suiviId)
         .select()
@@ -96,8 +94,7 @@ export function useAddMemberToDossier() {
       dossierId: string
       memberId: string
     }) => {
-      const { error } = await supabase
-        .from('dossier_membres')
+      const { error } = await (supabase.from('suivi_pieces') as any)
         .insert([{ dossier_id: dossierId, membre_id: memberId }])
 
       if (error) throw error

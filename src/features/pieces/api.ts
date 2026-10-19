@@ -47,8 +47,7 @@ export function useCreatePiece() {
 
   return useMutation({
     mutationFn: async (piece: PieceInsert) => {
-      const { data, error } = await supabase
-        .from('pieces')
+      const { data, error } = await (supabase.from('pieces') as any)
         .insert([piece])
         .select()
         .single()
@@ -70,8 +69,7 @@ export function useUpdatePiece(id: string) {
   return useMutation({
     mutationFn: async (piece: Database['public']['Tables']['pieces']['Update']) => {
       if (!id) throw new Error('Piece ID is required')
-      const { data, error } = await supabase
-        .from('pieces')
+      const { data, error } = await (supabase.from('pieces') as any)
         .update(piece)
         .eq('id', id)
         .select()
@@ -110,7 +108,7 @@ export function useUpdatePiecesOrder() {
   return useMutation({
     mutationFn: async (pieces: Array<{ id: string; ordre: number }>) => {
       const updates = pieces.map(p =>
-        supabase.from('pieces').update({ ordre: p.ordre }).eq('id', p.id)
+        (supabase.from('pieces') as any).update({ ordre: p.ordre }).eq('id', p.id)
       )
       await Promise.all(updates)
     },

@@ -1,4 +1,4 @@
-import { Menu, Bell, ChevronDown, LogOut, Moon, Sun } from 'lucide-react'
+import {Bell, ChevronDown, LogOut, Moon, Sun } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useDossiers } from '@/features/dossiers/api'
@@ -8,11 +8,10 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { Button } from '@/components/ui/Button'
 
 interface HeaderProps {
-  onMenuClick: () => void
   onNewDossier: () => void
 }
 
-export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
+export function Header({ onNewDossier }: HeaderProps) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
   const { data: dossiers = [] } = useDossiers()
@@ -54,15 +53,6 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
             }}
           />
         </a>
-
-        {/* Mobile menu button (hidden on desktop) */}
-        <button
-          onClick={onMenuClick}
-          className="lg:hidden p-2 hover:bg-[var(--input)] rounded-lg transition-colors flex-shrink-0"
-          aria-label="Ouvrir le menu"
-        >
-          <Menu className="w-5 h-5 text-[var(--foreground)]" />
-        </button>
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -114,9 +104,9 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
                               : 'text-[var(--foreground)] hover:bg-[var(--input)]'
                           }`}
                         >
-                          <p className="font-medium">{dossier.nom}</p>
+                          <p className="font-medium">{dossier.nom} · {getTRKCode(dossier.id)}</p>
                           <p className={`text-xs ${activeDossierId === dossier.id ? 'text-white/70' : 'text-[var(--muted)]'}`}>
-                            {getTRKCode(dossier.id)}
+                            {dossier.description}
                           </p>
                         </button>
                       ))

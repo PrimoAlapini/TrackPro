@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Mail, Lock } from 'lucide-react'
+import { DocumentLoader } from '@/components/ui/DocumentLoader'
 
 export function Login() {
   const navigate = useNavigate()
@@ -40,7 +41,7 @@ export function Login() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-        <div className="text-[var(--foreground)]">Chargement...</div>
+        <DocumentLoader size="lg" />
       </div>
     )
   }
