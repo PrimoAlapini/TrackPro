@@ -42,7 +42,7 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-[var(--card)] border-b border-[var(--border)] z-20">
-      <div className="h-full px-4 lg:px-6 flex items-center gap-4">
+      <div className="h-full max-w-7xl mx-auto px-0 lg:px-0 flex items-center gap-4">
         {/* Logo + brand (left) */}
         <a href="/" className="flex-shrink-0 flex items-center gap-2 hover:opacity-80 transition-opacity">
           <img
