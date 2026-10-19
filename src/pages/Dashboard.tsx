@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { BarChart } from '@/components/charts/BarChart'
 import { Donut } from '@/components/charts/Donut'
+import { DocumentLoader } from '@/components/ui/DocumentLoader'
 import { MemberDetailModal } from '@/features/membres/MemberDetailModal'
 import { statusCounts, personProgress, pieceProgress, pieceBarColor } from '@/lib/stats'
 import { Folder, ChevronLeft, ChevronRight, Search } from 'lucide-react'
@@ -109,10 +110,17 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
   const publicMembers = usePublicMembers()
 
   // Select data based on mode
-  const { data: dossiers = [] } = isPublic ? publicDossiers : privateDossiers
-  const { data: pieces = [] } = isPublic ? publicPieces : privatePieces
-  const { data: suiviList = [] } = isPublic ? publicSuiviPieces : privateSuiviPieces
-  const { data: membres = [] } = isPublic ? publicMembers : privateMembers
+  const queries = isPublic 
+    ? { dossiers: publicDossiers, pieces: publicPieces, suivi: publicSuiviPieces, membres: publicMembers }
+    : { dossiers: privateDossiers, pieces: privatePieces, suivi: privateSuiviPieces, membres: privateMembers }
+
+  const { data: dossiers = [] } = queries.dossiers
+  const { data: pieces = [] } = queries.pieces
+  const { data: suiviList = [] } = queries.suivi
+  const { data: membres = [] } = queries.membres
+
+  // Check if data is loading (using presence of data as a proxy)
+  const isLoading = (dossiers.length === 0 || pieces.length === 0 || suiviList.length === 0 || membres.length === 0) && activeDossierId
 
   const [personCurrentPage, setPersonCurrentPage] = useState(1)
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
@@ -140,7 +148,6 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
 
   // Limit filtered pieces to 5, rest in scroll
   const displayPieces = filteredPieces.slice(0, PIECE_PER_PAGE)
-  const hasMorePieces = filteredPieces.length > PIECE_PER_PAGE
 
   // Filter members by search query
   const filteredDossierMembers = useMemo(() => {
@@ -175,9 +182,23 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
     // In private mode, this would be handled by the parent
   }
 
+  // Show loader while data is loading
+  if (isLoading && activeDossierId) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-[30px] font-bold text-[var(--foreground)]">Tableau de bord</h1>
+        </div>
+        <div className='mt-60'>
+            <DocumentLoader size="lg" />
+          </div>
+      </div>
+    )
+  }
+
   if (!activeDossierId || !activeDossier) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-[30px] font-bold text-[var(--foreground)]">Tableau de bord</h1>
         </div>
