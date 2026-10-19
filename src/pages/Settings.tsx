@@ -109,7 +109,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 lg:space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-[30px] font-bold text-[var(--foreground)]">Paramètres</h1>
@@ -282,6 +282,7 @@ export function SettingsPage() {
                           setShowDossierForm(true)
                         }}
                         disabled={deleteDossier.isPending}
+                        aria-label={`Modifier le dossier ${dossier.nom}`}
                         icon={<Edit2 className="w-4 h-4" />}
                       />
                       <Button
@@ -289,6 +290,7 @@ export function SettingsPage() {
                         size="sm"
                         onClick={() => handleDeleteDossier(dossier)}
                         disabled={deleteDossier.isPending}
+                        aria-label={`Supprimer le dossier ${dossier.nom}`}
                         icon={<Trash2 className="w-4 h-4 text-[var(--danger)]" />}
                       />
                     </div>

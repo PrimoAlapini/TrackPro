@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
 import { useConfirm } from '@/contexts/DialogContext'
-import { Plus, Check, X } from 'lucide-react'
+import { Plus, Check, X, Search } from 'lucide-react'
 import type { Database } from '@/types/database'
 
 type Membre = Database['public']['Tables']['membres']['Row']
@@ -33,10 +33,20 @@ export function MemberAssignmentModal({
 }: MemberAssignmentModalProps) {
   const [showNewForm, setShowNewForm] = useState(false)
   const [newMemberName, setNewMemberName] = useState('')
-  const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedToAssign, setSelectedToAssign] = useState<Set<string>>(new Set())
+  const [selectedToRemove, setSelectedToRemove] = useState<Set<string>>(new Set())
+  const [isSaving, setIsSaving] = useState(false)
   const confirm = useConfirm()
 
   const assignedMemberIds = new Set(assignedMembers.map((dm) => dm.membre_id))
+
+  // Filtre par recherche
+  const filteredMembers = useMemo(() => {
+    return members.filter((m) =>
+      m.nom.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [members, searchQuery])
 
   const handleCreateAndAssign = async () => {
     if (newMemberName.trim() && onCreateAndAssign) {
@@ -46,36 +56,72 @@ export function MemberAssignmentModal({
     }
   }
 
-  const handleToggleMember = async (member: Membre, isCurrentlyAssigned: boolean) => {
-    setUpdatingMemberId(member.id)
-    try {
-      if (isCurrentlyAssigned) {
-        // Confirm removal
-        const confirmed = await confirm({
-          title: 'Retirer le membre',
-          message: `Êtes-vous sûr de vouloir retirer ${member.nom} de ce dossier ? Les pièces déjà assignées resteront en place.`,
-          confirmText: 'Retirer',
-          cancelText: 'Annuler',
-          variant: 'danger',
-        })
-        if (confirmed) {
-          await onRemove(member.id)
-        }
+  const toggleMemberSelection = (memberId: string, isCurrentlyAssigned: boolean) => {
+    if (isCurrentlyAssigned) {
+      // Pour retirer: toggle dans selectedToRemove
+      const newSet = new Set(selectedToRemove)
+      if (newSet.has(memberId)) {
+        newSet.delete(memberId)
       } else {
-        // Confirm assignment
-        const confirmed = await confirm({
-          title: 'Assigner le membre',
-          message: `Assigner ${member.nom} à ce dossier ? Les pièces lui seront automatiquement assignées en "Non déposée".`,
-          confirmText: 'Assigner',
-          cancelText: 'Annuler',
-          variant: 'primary',
-        })
-        if (confirmed) {
-          await onAssign(member.id)
-        }
+        newSet.add(memberId)
       }
+      setSelectedToRemove(newSet)
+    } else {
+      // Pour ajouter: toggle dans selectedToAssign
+      const newSet = new Set(selectedToAssign)
+      if (newSet.has(memberId)) {
+        newSet.delete(memberId)
+      } else {
+        newSet.add(memberId)
+      }
+      setSelectedToAssign(newSet)
+    }
+  }
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true)
+    try {
+      // Préparer le message de confirmation
+      const toAssign = Array.from(selectedToAssign).map(id => members.find(m => m.id === id)?.nom).filter(Boolean)
+      const toRemove = Array.from(selectedToRemove).map(id => members.find(m => m.id === id)?.nom).filter(Boolean)
+
+      let confirmMessage = ''
+      if (toAssign.length > 0) {
+        confirmMessage += `Ajouter:\n• ${toAssign.join('\n• ')}\n\n`
+      }
+      if (toRemove.length > 0) {
+        confirmMessage += `Retirer:\n• ${toRemove.join('\n• ')}`
+      }
+
+      const confirmed = await confirm({
+        title: 'Confirmer les changements',
+        message: confirmMessage || 'Aucun changement à appliquer',
+        confirmText: 'Valider',
+        cancelText: 'Annuler',
+        variant: 'normal',
+      })
+
+      if (!confirmed) {
+        setIsSaving(false)
+        return
+      }
+
+      // Ajouter les membres sélectionnés
+      for (const memberId of selectedToAssign) {
+        await onAssign(memberId)
+      }
+
+      // Retirer les membres sélectionnés
+      for (const memberId of selectedToRemove) {
+        await onRemove(memberId)
+      }
+
+      // Réinitialiser la sélection
+      setSelectedToAssign(new Set())
+      setSelectedToRemove(new Set())
+      onClose()
     } finally {
-      setUpdatingMemberId(null)
+      setIsSaving(false)
     }
   }
 
@@ -90,7 +136,7 @@ export function MemberAssignmentModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Affecter des membres" size="md">
-      <div className="space-y-4 max-h-96 overflow-y-auto">
+      <div className="space-y-4">
         {/* New member form */}
         {showNewForm ? (
           <div className="flex gap-2 p-3 border border-[var(--border)] rounded-lg">
@@ -98,7 +144,7 @@ export function MemberAssignmentModal({
               placeholder="Nouveau membre..."
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
-              disabled={isLoading}
+              disabled={isLoading || isSaving}
               className="flex-1"
             />
             <Button
@@ -126,28 +172,44 @@ export function MemberAssignmentModal({
           <button
             onClick={() => setShowNewForm(true)}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--primary)] hover:bg-[var(--primary)] hover:bg-opacity-10 rounded-lg transition-colors"
-            disabled={isLoading}
+            disabled={isLoading || isSaving}
           >
             <Plus className="w-4 h-4" />
             Créer un nouveau membre
           </button>
         )}
 
+        {/* Search input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
+          <input
+            type="text"
+            placeholder="Rechercher un membre..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--input)] text-[var(--foreground)]"
+            disabled={isLoading || isSaving}
+          />
+        </div>
+
         {/* Member list */}
-        <div className="space-y-2">
-          {members.length === 0 ? (
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {filteredMembers.length === 0 ? (
             <p className="text-sm text-[var(--muted)] text-center py-4">
-              Aucun membre dans l'annuaire
+              {members.length === 0 ? 'Aucun membre dans l\'annuaire' : 'Aucun membre ne correspond à votre recherche'}
             </p>
           ) : (
-            members.map((member) => {
+            filteredMembers.map((member) => {
               const isAssigned = assignedMemberIds.has(member.id)
-              const isUpdating = updatingMemberId === member.id
+              const isSelectedForAssign = selectedToAssign.has(member.id)
+              const isSelectedForRemove = selectedToRemove.has(member.id)
+              const willBeAssigned = isSelectedForAssign || (isAssigned && !isSelectedForRemove)
+              
               return (
                 <div
                   key={member.id}
                   className={`flex items-center gap-3 p-3 border rounded-lg transition-all ${
-                    isAssigned
+                    willBeAssigned
                       ? 'border-[var(--primary)] bg-[var(--primary)] bg-opacity-5'
                       : 'border-[var(--border)] hover:bg-[var(--input)]'
                   }`}
@@ -162,23 +224,23 @@ export function MemberAssignmentModal({
                     <div>
                       <p className="text-sm font-medium text-[var(--foreground)]">{member.nom}</p>
                       <p className="text-xs text-[var(--muted)]">
-                        {isAssigned ? 'Assigné à ce dossier' : 'Non assigné'}
+                        {willBeAssigned ? 'Assigné à ce dossier' : 'Non assigné'}
                       </p>
                     </div>
                   </div>
 
                   {/* Toggle Button */}
                   <button
-                    onClick={() => handleToggleMember(member, isAssigned)}
-                    disabled={isLoading || isUpdating}
+                    onClick={() => toggleMemberSelection(member.id, isAssigned)}
+                    disabled={isLoading || isSaving}
                     className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
-                      isAssigned
+                      willBeAssigned
                         ? 'bg-[var(--success)] text-white hover:bg-opacity-80'
                         : 'bg-[var(--input)] text-[var(--muted)] hover:bg-[var(--border)]'
                     } disabled:opacity-50`}
-                    aria-label={isAssigned ? 'Retirer' : 'Assigner'}
+                    aria-label={willBeAssigned ? 'Retirer' : 'Assigner'}
                   >
-                    {isAssigned ? (
+                    {willBeAssigned ? (
                       <Check className="w-5 h-5" />
                     ) : (
                       <X className="w-5 h-5" />
@@ -196,9 +258,18 @@ export function MemberAssignmentModal({
             type="button"
             variant="secondary"
             onClick={onClose}
-            disabled={isLoading}
+            disabled={isLoading || isSaving}
           >
-            Fermer
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleSaveChanges}
+            isLoading={isSaving}
+            disabled={selectedToAssign.size === 0 && selectedToRemove.size === 0}
+          >
+            Valider ({selectedToAssign.size + selectedToRemove.size} changement{selectedToAssign.size + selectedToRemove.size !== 1 ? 's' : ''})
           </Button>
         </div>
       </div>

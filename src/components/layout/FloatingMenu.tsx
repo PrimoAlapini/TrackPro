@@ -1,254 +1,371 @@
-import { useState, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { GripVertical, ChevronUp, ChevronDown, LayoutDashboard, FileText, BarChart3, Users, Settings } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  GripVertical,
+  LayoutDashboard,
+  Settings,
+  Users,
+} from 'lucide-react'
 
 const NAV_ITEMS = [
   { label: 'Tableau de bord', href: '/', icon: LayoutDashboard },
   { label: 'Pièces du dossier', href: '/pieces', icon: FileText },
-  { label: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { label: 'Membres', href: '/membres', icon: Users },
   { label: 'Paramètres', href: '/parametres', icon: Settings },
 ]
 
-interface Position {
-  x: number
-  y: number
+type Position = { right: number; bottom: number }
+type PanelLayout = { direction: 'up' | 'down'; maxHeight?: number; alignLeft: boolean }
+
+const STORAGE_KEY = 'trackpro.floatingMenu.position'
+const DEFAULT_POSITION: Position = { right: 32, bottom: 32 }
+const MARGIN = 8 // marge avec les bords de la fenêtre
+const GAP = 12 // espace entre la barre et le panneau
+const PANEL_WIDTH = 248
+const DRAG_THRESHOLD = 4 // px avant de considérer un glissement
+
+const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
+
+function readPosition(): Position | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const p = JSON.parse(raw)
+    if (p && isFiniteNumber(p.right) && isFiniteNumber(p.bottom) && p.right >= 0 && p.bottom >= 0) {
+      return { right: p.right, bottom: p.bottom }
+    }
+  } catch {
+    /* localStorage indisponible ou JSON invalide : position par défaut */
+  }
+  return null
 }
 
-const STORAGE_KEY = 'floatingMenuPosition'
-// Default position: bottom-right corner
-const DEFAULT_POSITION = { x: window.innerWidth - 32 - 60, y: window.innerHeight - 32 - 60 }
+function writePosition(p: Position) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
+  } catch {
+    /* ignoré */
+  }
+}
 
 export function FloatingMenu() {
-  const location = useLocation()
-  const [isOpen, setIsOpen] = useState(true)
-  const [position, setPosition] = useState<Position>(DEFAULT_POSITION)
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [panelDirection, setPanelDirection] = useState<'up' | 'down'>('up')
-  const containerRef = useRef<HTMLDivElement>(null)
-  const gripRef = useRef<HTMLButtonElement>(null)
+  const { pathname } = useLocation()
+  const [isOpen, setIsOpen] = useState(false)
+  const [position, setPosition] = useState<Position | null>(readPosition)
+  const [dragging, setDragging] = useState(false)
+  const [panel, setPanel] = useState<PanelLayout>({ direction: 'up', alignLeft: false })
 
-  // Load position from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        setPosition(parsed)
-      }
-    } catch (e) {
-      console.error('Failed to load position:', e)
+  // Le conteneur ne contient QUE la barre : sa taille ne change jamais.
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+  const raf = useRef<number | null>(null)
+  const drag = useRef({
+    active: false,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+    barW: 0,
+    barH: 0,
+    moved: false,
+    dx: 0,
+    dy: 0,
+  })
+
+  const clampPosition = useCallback((p: Position): Position => {
+    const el = wrapperRef.current
+    if (!el) return p
+    const { width, height } = el.getBoundingClientRect()
+    if (width === 0) return p // masqué (mobile)
+    const cw = document.documentElement.clientWidth
+    const ch = document.documentElement.clientHeight
+    const next = {
+      right: clamp(p.right, MARGIN, cw - width - MARGIN),
+      bottom: clamp(p.bottom, MARGIN, ch - height - MARGIN),
     }
+    return next.right === p.right && next.bottom === p.bottom ? p : next
   }, [])
 
-  // Save position to localStorage when it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(position))
-    } catch (e) {
-      console.error('Failed to save position:', e)
+  // Sens d'ouverture, hauteur max et alignement du panneau, mesurés sur la BARRE.
+  const updatePanel = useCallback(() => {
+    const bar = wrapperRef.current
+    const panelEl = panelRef.current
+    if (!bar || !panelEl) return
+    const r = bar.getBoundingClientRect()
+    if (r.width === 0) return
+    const ch = document.documentElement.clientHeight
+    const natural = panelEl.scrollHeight + 2 // + bordures
+    const above = r.top - GAP - MARGIN
+    const below = ch - r.bottom - GAP - MARGIN
+    const direction: 'up' | 'down' =
+      above >= natural || (below < natural && above >= below) ? 'up' : 'down'
+    const space = direction === 'up' ? above : below
+    const next: PanelLayout = {
+      direction,
+      maxHeight: space < natural ? Math.max(96, Math.floor(space)) : undefined,
+      alignLeft: r.right - PANEL_WIDTH < MARGIN,
     }
-  }, [position])
+    setPanel((prev) =>
+      prev.direction === next.direction &&
+      prev.maxHeight === next.maxHeight &&
+      prev.alignLeft === next.alignLeft
+        ? prev
+        : next,
+    )
+  }, [])
 
-  // Determine panel direction based on available space
-  useEffect(() => {
-    if (!containerRef.current || !isOpen) return
+  useLayoutEffect(() => {
+    if (isOpen) updatePanel()
+  }, [isOpen, position, updatePanel])
 
-    const rect = containerRef.current.getBoundingClientRect()
-    const menuBarHeight = 52 // Fixed height of menu bar
-    const panelHeight = 48 * NAV_ITEMS.length + 16 // 48px per item + padding
-    
-    // Calculate space based on menu bar position (not the full container which includes panel)
-    const menuBarTop = rect.top
-    const menuBarBottom = menuBarTop + menuBarHeight
-    
-    const spaceAbove = menuBarTop
-    const spaceBelow = window.innerHeight - menuBarBottom
-
-    // When menu is at BOTTOM: spaceBelow is SMALL, spaceAbove is LARGE → open UP
-    // When menu is at TOP: spaceAbove is SMALL, spaceBelow is LARGE → open DOWN
-    setPanelDirection(spaceBelow < panelHeight ? 'up' : 'down')
-  }, [isOpen, position])
-
-  // Handle mouse drag
-  const handleGripMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-    setDragOffset({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    })
-  }
+  // Recadre une position enregistrée qui sortirait de la fenêtre.
+  useLayoutEffect(() => {
+    setPosition((p) => (p ? clampPosition(p) : p))
+  }, [clampPosition])
 
   useEffect(() => {
-    if (!isDragging) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const newX = e.clientX - dragOffset.x
-      const newY = e.clientY - dragOffset.y
-
-      // Clamp to window boundaries (with 32px margin)
-      // Menu width ~60px, but panel is 240px (w-60), so limit X to prevent panel overflow
-      const clampedX = Math.max(32, Math.min(newX, window.innerWidth - 32 - 240))
-      const clampedY = Math.max(32, Math.min(newY, window.innerHeight - 32 - 52))
-
-      setPosition({ x: clampedX, y: clampedY })
+    const onResize = () => {
+      if (drag.current.active) return
+      setPosition((p) => (p ? clampPosition(p) : p))
+      updatePanel()
     }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [clampPosition, updatePanel])
 
-    const handleMouseUp = () => {
-      setIsDragging(false)
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isDragging, dragOffset])
-
-  // Handle keyboard navigation on grip
-  const handleGripKeyDown = (e: React.KeyboardEvent) => {
-    const step = 10
-    let newX = position.x
-    let newY = position.y
-
-    switch (e.key) {
-      case 'ArrowUp':
-        e.preventDefault()
-        newY = Math.max(32, newY - step)
-        break
-      case 'ArrowDown':
-        e.preventDefault()
-        newY = Math.min(window.innerHeight - 32 - 52, newY + step)
-        break
-      case 'ArrowLeft':
-        e.preventDefault()
-        newX = Math.max(32, newX - step)
-        break
-      case 'ArrowRight':
-        e.preventDefault()
-        newX = Math.min(window.innerWidth - 32 - 52, newX + step)
-        break
-      default:
-        return
-    }
-
-    setPosition({ x: newX, y: newY })
-  }
-
-  // Close on Escape
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false)
-      }
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
     }
-
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [isOpen])
 
-  const currentRoute = NAV_ITEMS.find((item) => item.href === location.pathname)
+  useEffect(
+    () => () => {
+      if (raf.current !== null) cancelAnimationFrame(raf.current)
+      document.body.style.userSelect = ''
+    },
+    [],
+  )
+
+  // ---- Drag ----------------------------------------------------------------
+
+  const onGripPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return
+    const el = wrapperRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    drag.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: r.left,
+      startTop: r.top,
+      barW: r.width,
+      barH: r.height,
+      moved: false,
+      dx: 0,
+      dy: 0,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const onGripPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current
+    // Ignore tout mouvement sans drag actif (survol) ou venant d'un autre pointeur.
+    if (!d.active || e.pointerId !== d.pointerId) return
+
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+      d.moved = true
+      setIsOpen(false)
+      setDragging(true)
+      document.body.style.userSelect = 'none'
+    }
+
+    const cw = document.documentElement.clientWidth
+    const ch = document.documentElement.clientHeight
+    const left = clamp(d.startLeft + dx, MARGIN, cw - d.barW - MARGIN)
+    const top = clamp(d.startTop + dy, MARGIN, ch - d.barH - MARGIN)
+    d.dx = left - d.startLeft
+    d.dy = top - d.startTop
+    if (!isFiniteNumber(d.dx) || !isFiniteNumber(d.dy)) return
+
+    if (raf.current === null) {
+      raf.current = requestAnimationFrame(() => {
+        raf.current = null
+        const el = wrapperRef.current
+        if (el) el.style.transform = `translate3d(${drag.current.dx}px, ${drag.current.dy}px, 0)`
+      })
+    }
+  }
+
+  const endDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+
+    d.active = false
+    d.pointerId = -1
+    if (raf.current !== null) {
+      cancelAnimationFrame(raf.current)
+      raf.current = null
+    }
+    document.body.style.userSelect = ''
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* déjà libéré */
+    }
+
+    const el = wrapperRef.current
+    if (el) el.style.transform = ''
+
+    if (d.moved && el) {
+      const cw = document.documentElement.clientWidth
+      const ch = document.documentElement.clientHeight
+      const next: Position = {
+        right: cw - (d.startLeft + d.dx + d.barW),
+        bottom: ch - (d.startTop + d.dy + d.barH),
+      }
+      if (isFiniteNumber(next.right) && isFiniteNumber(next.bottom)) {
+        setPosition(next)
+        writePosition(next)
+      }
+    }
+    d.moved = false
+    d.dx = 0
+    d.dy = 0
+    setDragging(false)
+  }
+
+  // ---- Clavier sur la poignée ----------------------------------------------
+
+  const onGripKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (drag.current.active) return
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return
+    e.preventDefault()
+    const el = wrapperRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const cw = document.documentElement.clientWidth
+    const ch = document.documentElement.clientHeight
+    const step = e.shiftKey ? 32 : 8
+
+    let right = cw - r.right
+    let bottom = ch - r.bottom
+    if (e.key === 'ArrowLeft') right += step
+    if (e.key === 'ArrowRight') right -= step
+    if (e.key === 'ArrowUp') bottom += step
+    if (e.key === 'ArrowDown') bottom -= step
+
+    const next: Position = {
+      right: clamp(right, MARGIN, cw - r.width - MARGIN),
+      bottom: clamp(bottom, MARGIN, ch - r.height - MARGIN),
+    }
+    setPosition(next)
+    writePosition(next)
+  }
+
+  // ---- Rendu ---------------------------------------------------------------
+
+  const current = NAV_ITEMS.find((i) => (i.href === '/' ? pathname === '/' : pathname.startsWith(i.href)))
+  const CurrentIcon = current?.icon ?? LayoutDashboard
+  const pos = position ?? DEFAULT_POSITION
+  const showChevronUp = panel.direction === 'up' ? !isOpen : isOpen
+  const ringClass = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]'
 
   return (
     <>
-      {/* Floating Menu Bar */}
+      {isOpen && <div className="fixed inset-0 z-30" aria-hidden="true" onClick={() => setIsOpen(false)} />}
+
       <div
-        ref={containerRef}
-        className="fixed z-40 pointer-events-auto"
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-        }}
+        ref={wrapperRef}
+        className="fixed z-40 hidden md:block"
+        style={{ right: pos.right, bottom: pos.bottom }}
       >
-        <div className={`flex gap-2 ${panelDirection === 'up' ? 'flex-col-reverse' : 'flex-col'}`}>
-          {/* Panel (opens above or below bar) */}
-          {isOpen && (
-            <div
-              className="w-60 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-lg overflow-hidden"
-              role="navigation"
-              aria-label="Navigation principale"
-            >
-              <nav className="py-1">
-                {NAV_ITEMS.map((item) => {
-                  const Icon = item.icon
-                  const isActive = location.pathname === item.href
-
-                  return (
-                    <NavLink
-                      key={item.href}
-                      to={item.href}
-                      end={item.href === '/'}
-                      onClick={() => setIsOpen(false)}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                          isActive
-                            ? 'bg-[var(--primary)] text-white'
-                            : 'text-[var(--foreground)] hover:bg-[var(--input)]'
-                        }`
-                      }
-                    >
-                      <Icon className="w-5 h-5 flex-shrink-0" />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  )
-                })}
-              </nav>
-            </div>
-          )}
-
-          {/* Menu Bar (always visible) */}
-          <div
-            className="h-13 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-lg flex items-center gap-2 px-3 flex-shrink-0"
+        {isOpen && (
+          <nav
+            id="floating-menu-panel"
+            ref={panelRef}
+            aria-label="Navigation principale"
+            className={`absolute flex w-[248px] flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2 shadow-2xl ${
+              panel.alignLeft ? 'left-0' : 'right-0'
+            }`}
+            style={{
+              ...(panel.direction === 'up'
+                ? { bottom: `calc(100% + ${GAP}px)` }
+                : { top: `calc(100% + ${GAP}px)` }),
+              maxHeight: panel.maxHeight,
+              overflowY: panel.maxHeight !== undefined ? 'auto' : undefined,
+            }}
           >
-            {/* Grip handle */}
-            <button
-              ref={gripRef}
-              onMouseDown={handleGripMouseDown}
-              onKeyDown={handleGripKeyDown}
-              tabIndex={0}
-              className="p-2 hover:bg-[var(--input)] rounded-lg transition-colors cursor-grab active:cursor-grabbing"
-              aria-label="Déplacer le menu"
-              title="Glissez pour déplacer le menu"
-            >
-              <GripVertical className="w-5 h-5 text-[var(--muted)]" />
-            </button>
+            {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
+              <NavLink
+                key={href}
+                to={href}
+                end={href === '/'}
+                onClick={() => setIsOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-[10px] px-3.5 py-3 text-[15px] font-medium transition-colors ${ringClass} ${
+                    isActive
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'text-[var(--foreground)] hover:bg-[var(--input)]'
+                  }`
+                }
+              >
+                <Icon className="size-5 shrink-0" aria-hidden="true" />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+        )}
 
-            {/* Current page icon badge */}
-            {currentRoute && (
-              <div className="w-8 h-8 rounded-lg bg-[var(--primary)] text-white flex items-center justify-center flex-shrink-0">
-                {currentRoute.icon && <currentRoute.icon className="w-5 h-5" />}
-              </div>
+        <div className="flex h-[52px] items-center gap-1 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-2 shadow-xl">
+          <button
+            type="button"
+            aria-label="Déplacer le menu"
+            title="Glissez pour déplacer le menu"
+            onPointerDown={onGripPointerDown}
+            onPointerMove={onGripPointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onKeyDown={onGripKeyDown}
+            className={`flex h-9 w-8 touch-none select-none items-center justify-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--input)] ${ringClass} ${
+              dragging ? 'cursor-grabbing' : 'cursor-grab'
+            }`}
+          >
+            <GripVertical className="size-[18px]" aria-hidden="true" />
+          </button>
+
+          <button
+            type="button"
+            aria-expanded={isOpen}
+            aria-controls="floating-menu-panel"
+            onClick={() => setIsOpen((o) => !o)}
+            className={`flex h-9 min-w-[152px] items-center gap-2.5 rounded-[10px] pl-1.5 pr-2.5 text-[15px] font-semibold text-[var(--foreground)] hover:bg-[var(--input)] ${ringClass}`}
+          >
+            <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--primary)] text-white">
+              <CurrentIcon className="size-4" aria-hidden="true" />
+            </span>
+            Menu
+            {showChevronUp ? (
+              <ChevronUp className="ml-auto size-4 text-[var(--muted-foreground)]" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="ml-auto size-4 text-[var(--muted-foreground)]" aria-hidden="true" />
             )}
-
-            {/* Menu label + toggle button */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              aria-expanded={isOpen}
-              className="flex items-center gap-2 px-2 py-1 hover:bg-[var(--input)] rounded-lg transition-colors"
-              aria-label="Ouvrir/fermer le menu de navigation"
-            >
-              <span className="text-sm font-medium text-[var(--foreground)]">Menu</span>
-              {isOpen ? (
-                <ChevronUp className="w-4 h-4 text-[var(--muted)]" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-[var(--muted)]" />
-              )}
-            </button>
-          </div>
+          </button>
         </div>
       </div>
-
-      {/* Backdrop when panel is open */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
     </>
   )
 }

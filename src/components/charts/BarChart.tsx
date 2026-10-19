@@ -7,31 +7,41 @@ interface BarChartProps {
 }
 
 export function BarChart({ data }: BarChartProps) {
-  const maxValue = Math.max(...data.map((d) => d.value), 100)
+  const maxValue = Math.max(...data.map((d) => d.value || 0), 100)
 
   return (
-    <div className="space-y-4">
-      {data.map((item, idx) => (
-        <div key={idx} className="space-y-1">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-[var(--foreground)] font-medium">{item.label}</span>
-            <span className="text-[var(--muted)]">{item.value}%</span>
-          </div>
-          <div className="w-full h-8 bg-[var(--track)] rounded-lg overflow-hidden">
-            <div
-              className={`h-full bg-[${item.color}] transition-all duration-300 flex items-center justify-end pr-2`}
-              style={{
-                width: `${(item.value / maxValue) * 100}%`,
-                backgroundColor: item.color,
-              }}
-            >
-              {item.value > 20 && (
-                <span className="text-xs font-semibold text-white">{item.value}%</span>
+    <div className="space-y-3.5">
+      {data.map((item, idx) => {
+        const val = item.value && item.value > 0 ? item.value : 0
+        const widthPercentage = (val / maxValue) * 100
+
+        return (
+          <div key={idx} className="space-y-1.5">
+            {/* Label et pourcentage */}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[var(--foreground)] font-semibold">
+                {item.label}
+              </span>
+              <span className="text-[var(--muted)] font-bold">
+                {val}%
+              </span>
+            </div>
+
+            {/* Piste & Barre de progression affinée */}
+            <div className="w-full h-4 bg-[var(--track)] rounded-full overflow-hidden p-0.5 border border-[var(--border)] border-opacity-40">
+              {val > 0 && (
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-out hover:brightness-110"
+                  style={{
+                    width: `${widthPercentage}%`,
+                    backgroundColor: item.color,
+                  }}
+                />
               )}
             </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

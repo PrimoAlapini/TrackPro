@@ -1,10 +1,9 @@
 import { NavLink, useLocation } from 'react-router'
-import { LayoutDashboard, FileText, BarChart3, Users, Settings } from 'lucide-react'
+import { LayoutDashboard, FileText, Users, Settings } from 'lucide-react'
 
 const NAV_ITEMS = [
   { label: 'Tableau de bord', href: '/', icon: LayoutDashboard },
   { label: 'Pièces du dossier', href: '/pieces', icon: FileText },
-  { label: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { label: 'Membres', href: '/membres', icon: Users },
   { label: 'Paramètres', href: '/parametres', icon: Settings },
 ]

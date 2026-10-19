@@ -1,10 +1,10 @@
-import { Menu, Bell, ChevronDown, LogOut, Moon, Sun, Monitor } from 'lucide-react'
+import { Menu, Bell, ChevronDown, LogOut, Moon, Sun } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useDossiers } from '@/features/dossiers/api'
 import { useDossier } from '@/contexts/DossierContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { applyTheme, getCurrentTheme, type Theme } from '@/lib/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { Button } from '@/components/ui/Button'
 
 interface HeaderProps {
@@ -17,17 +17,12 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
   const { signOut } = useAuth()
   const { data: dossiers = [] } = useDossiers()
   const { activeDossierId, setActiveDossierId } = useDossier()
+  const { theme, setTheme } = useTheme()
   const [showDossierMenu, setShowDossierMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [theme, setTheme] = useState<Theme>(getCurrentTheme())
   const [isLoading, setIsLoading] = useState(false)
 
   const activeDossier = dossiers.find((d) => d.id === activeDossierId)
-
-  const handleThemeChange = (newTheme: Theme) => {
-    applyTheme(newTheme)
-    setTheme(newTheme)
-  }
 
   const handleSignOut = async () => {
     setIsLoading(true)
@@ -47,7 +42,7 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-[var(--card)] border-b border-[var(--border)] z-20">
-      <div className="h-full px-4 lg:px-6 flex items-center gap-4">
+      <div className="h-full max-w-7xl mx-auto px-0 lg:px-0 flex items-center gap-4">
         {/* Logo + brand (left) */}
         <a href="/" className="flex-shrink-0 flex items-center gap-2 hover:opacity-80 transition-opacity">
           <img
@@ -188,7 +183,7 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
                     <p className="text-xs font-semibold text-[var(--muted)] px-2">THÈME</p>
                     <div className="space-y-1">
                       <button
-                        onClick={() => handleThemeChange('light')}
+                        onClick={() => setTheme('light')}
                         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                           theme === 'light'
                             ? 'bg-[var(--primary)] text-white'
@@ -199,7 +194,7 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
                         Clair
                       </button>
                       <button
-                        onClick={() => handleThemeChange('dark')}
+                        onClick={() => setTheme('dark')}
                         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                           theme === 'dark'
                             ? 'bg-[var(--primary)] text-white'
@@ -208,17 +203,6 @@ export function Header({ onMenuClick, onNewDossier }: HeaderProps) {
                       >
                         <Moon className="w-4 h-4" />
                         Sombre
-                      </button>
-                      <button
-                        onClick={() => handleThemeChange('system')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                          theme === 'system'
-                            ? 'bg-[var(--primary)] text-white'
-                            : 'text-[var(--foreground)] hover:bg-[var(--input)]'
-                        }`}
-                      >
-                        <Monitor className="w-4 h-4" />
-                        Système
                       </button>
                     </div>
                   </div>

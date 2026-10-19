@@ -14,7 +14,10 @@ export function useMembers() {
         .select('*')
         .order('nom', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        console.warn('Error fetching members:', error)
+        return []
+      }
       return data as Membre[]
     },
   })

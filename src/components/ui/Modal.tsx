@@ -7,7 +7,7 @@ interface ModalProps extends HTMLAttributes<HTMLDivElement> {
   onClose: () => void
   children: ReactNode
   title?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 export const Modal = forwardRef<HTMLDivElement, ModalProps>(
@@ -41,6 +41,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
       sm: 'w-96',
       md: 'w-[540px]',
       lg: 'w-[640px]',
+      xl: 'w-[800px] max-w-[calc(100vw-2rem)]',
     }
 
     return (
