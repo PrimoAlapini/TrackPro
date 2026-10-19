@@ -96,13 +96,13 @@ interface DashboardProps {
 
 export function Dashboard({ isPublic = false }: DashboardProps) {
   const { activeDossierId } = useDossier()
-  
+
   // Always call all hooks (required by React)
   const privateDossiers = useDossiers()
   const privatePieces = usePieces(activeDossierId || undefined)
   const privateSuiviPieces = useSuiviPieces(activeDossierId || undefined)
   const privateMembers = useMembers()
-  
+
   const publicDossiers = usePublicDossiers()
   const publicPieces = usePublicPieces(activeDossierId || undefined)
   const publicSuiviPieces = usePublicSuiviPieces(activeDossierId || undefined)
@@ -120,6 +120,7 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
   const [pieceSearchQuery, setPieceSearchQuery] = useState('')
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const ITEMS_PER_PAGE = 5
+  const PIECE_PER_PAGE = 8
 
   const activeDossier = dossiers.find((d) => d.id === activeDossierId)
 
@@ -138,8 +139,8 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
   }, [pieces, pieceSearchQuery])
 
   // Limit filtered pieces to 5, rest in scroll
-  const displayPieces = filteredPieces.slice(0, ITEMS_PER_PAGE)
-  const hasMorePieces = filteredPieces.length > ITEMS_PER_PAGE
+  const displayPieces = filteredPieces.slice(0, PIECE_PER_PAGE)
+  const hasMorePieces = filteredPieces.length > PIECE_PER_PAGE
 
   // Filter members by search query
   const filteredDossierMembers = useMemo(() => {
@@ -250,8 +251,8 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg">Progression par pièce</CardTitle>
-            <div className="flex items-center gap-2 bg-[var(--input)] rounded-lg px-3 py-2 w-40">
-              <Search className="w-4 h-4 text-[var(--muted)]" />
+            <div className="flex items-center gap-2 bg-[var(--input)] border border-[var(--border)] rounded-lg px-3 py-2 w-48 transition-colors focus-within:border-[var(--muted)]">
+              <Search className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
               <input
                 type="text"
                 placeholder="Rechercher..."
@@ -260,16 +261,20 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
                   setPieceSearchQuery(e.target.value)
                   setPersonCurrentPage(1)
                 }}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--foreground)] placeholder-[var(--muted)]"
+                className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--foreground)] placeholder-[var(--muted)] min-w-0"
               />
             </div>
           </CardHeader>
+
           <CardContent>
             {displayPieces.length === 0 ? (
-              <p className="text-sm text-[var(--muted)] text-center py-4">Aucune pièce trouvée</p>
+              <p className="text-sm text-[var(--muted)] text-center py-4">
+                Aucune pièce trouvée
+              </p>
             ) : (
               <>
-                <div className={`${hasMorePieces ? 'overflow-y-auto max-h-96' : ''}`}>
+                {/* Conteneur avec scroll automatique et hauteur limite */}
+                <div className="max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                   <BarChart
                     data={displayPieces.map((piece) => {
                       const progress = pieceProgress(suiviList, piece.id, dossierMembers.length)
@@ -281,14 +286,33 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
                     })}
                   />
                 </div>
-                {hasMorePieces && (
-                  <p className="text-xs text-[var(--muted)] mt-3 text-center">
-                    {displayPieces.length} / {filteredPieces.length} pièces affichées (scrollez pour plus)
+
+                {/* Note ou indicateur si le nombre de pièces est élevé */}
+                {displayPieces.length > 5 && (
+                  <p className="text-xs text-[var(--muted)] mt-3 text-center border-t border-[var(--border)] pt-2">
+                    {displayPieces.length} / {filteredPieces.length} pièces affichées (faites défiler pour tout voir)
                   </p>
                 )}
               </>
             )}
           </CardContent>
+
+          {/* CSS pour le scrollbar fin (si pas déjà défini dans votre CSS global) */}
+          <style>{`
+                  .custom-scrollbar::-webkit-scrollbar {
+                     width: 5px;
+              }
+                  .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+              }
+                  .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: var(--border);
+                      border-radius: 9999px;
+              }
+                  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: var(--muted);
+              }
+          `}</style>
         </Card>
 
         {/* Person Progress - with pagination and clickable members */}
@@ -416,6 +440,10 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
           </div>
         </CardContent>
       </Card>
+
+      
+
+
 
       {/* Member Detail Modal */}
       <MemberDetailModal
