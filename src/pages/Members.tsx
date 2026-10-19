@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
-import { Spinner } from '@/components/ui/Spinner'
+import { DocumentLoader } from '@/components/ui/DocumentLoader'
 import { Users, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
 export function Members() {
@@ -150,7 +150,7 @@ export function Members() {
         <h1 className="text-[30px] font-bold text-[var(--foreground)]">Membres</h1>
         <Card>
           <CardContent className="flex justify-center py-12">
-            <Spinner size="lg" />
+            <DocumentLoader size="lg" />
           </CardContent>
         </Card>
       </div>
