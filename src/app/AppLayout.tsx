@@ -13,7 +13,6 @@ export function AppLayout({ children, onNewDossier }: AppLayoutProps) {
     <div className="min-h-screen bg-[var(--background)]">
       {/* Header */}
       <Header
-        onMenuClick={() => {}} // Not used anymore (no sidebar toggle)
         onNewDossier={onNewDossier || (() => {})}
       />
 

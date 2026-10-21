@@ -284,7 +284,9 @@ export function SettingsPage() {
                         disabled={deleteDossier.isPending}
                         aria-label={`Modifier le dossier ${dossier.nom}`}
                         icon={<Edit2 className="w-4 h-4" />}
-                      />
+                      >
+                        Modifier
+                      </Button>
                       <Button
                         variant="secondary"
                         size="sm"
@@ -292,7 +294,9 @@ export function SettingsPage() {
                         disabled={deleteDossier.isPending}
                         aria-label={`Supprimer le dossier ${dossier.nom}`}
                         icon={<Trash2 className="w-4 h-4 text-[var(--danger)]" />}
-                      />
+                      >
+                        Supprimer
+                      </Button>
                     </div>
                   </div>
                 )

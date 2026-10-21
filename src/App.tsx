@@ -18,6 +18,7 @@ import { AppLayout } from '@/app/AppLayout'
 import { PublicDashboardLayout } from '@/app/PublicDashboardLayout'
 import { DossierForm } from '@/features/dossiers/DossierForm'
 import { useCreateDossier, useDossiers } from '@/features/dossiers/api'
+import { DocumentLoader } from '@/components/ui/DocumentLoader'
 
 // Root layout
 function RootLayout() {
@@ -104,7 +105,7 @@ function HomeRoute() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-        <div className="text-[var(--foreground)]">Chargement...</div>
+        <DocumentLoader size="lg" />
       </div>
     )
   }
