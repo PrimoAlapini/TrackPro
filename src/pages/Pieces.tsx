@@ -224,11 +224,11 @@ export function Pieces() {
           <h1 className="text-[30px] font-bold text-[var(--foreground)]">Pièces du dossier</h1>
           <p className="text-[var(--muted)] mt-1">{activeDossier?.nom}</p>
         </div>
-        <Card>
-          <CardContent className="flex justify-center py-12">
+        {/* <Card> */}
+          <div className="flex justify-center py-12">
             <DocumentLoader size="lg" />
-          </CardContent>
-        </Card>
+          </div>
+        {/* </Card> */}
       </div>
     )
   }

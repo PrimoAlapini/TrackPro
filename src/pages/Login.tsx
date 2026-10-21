@@ -55,7 +55,7 @@ export function Login() {
           <div className="space-y-3">
             <div className="flex items-center justify-center gap-3">
               <img
-                src="/logo.png"
+                src="/trackPro_logo.png"
                 alt="TrackPro"
                 className="h-15 w-auto"
                 onError={(e) => {

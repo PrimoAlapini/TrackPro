@@ -88,7 +88,8 @@ export function MemberDetailModal({
       title=""
       size="lg"
     >
-      <div className="space-y-6">
+      {/* Conteneur principal avec masquage de la scrollbar native de la modale */}
+      <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-1 custom-scrollbar">
         {/* Header */}
         <div className="flex items-center justify-between pb-5 border-b border-[var(--border)]">
           <div className="flex items-center gap-4">
@@ -130,7 +131,7 @@ export function MemberDetailModal({
           </div>
         </div>
 
-        {/* Dossiers Container avec Scroll Émincé */}
+        {/* Dossiers Container */}
         {memberDossiers.length === 0 ? (
           <EmptyState
             icon={<FileText className="w-12 h-12" />}
@@ -139,7 +140,7 @@ export function MemberDetailModal({
             action={null}
           />
         ) : (
-          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+          <div className="space-y-4">
             {memberDossiers.map((dossier) => {
               const dossierSuivi = suiviList.filter(
                 (s) => s.dossier_id === dossier.id && s.membre_id === member.id
@@ -187,10 +188,11 @@ export function MemberDetailModal({
                     </p>
                   ) : (
                     <div className="pt-2 space-y-2 border-t border-[var(--border)]">
-                      <div className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider grid grid-cols-12 gap-3 px-1">
-                        <div className="col-span-5">Pièce</div>
-                        <div className="col-span-4">Statut</div>
-                        <div className="col-span-3 text-right">Déposée le</div>
+                      {/* En-têtes en flexbox alignés parfaitement avec les lignes */}
+                      <div className="flex items-center justify-between text-xs font-semibold text-[var(--muted)] uppercase tracking-wider px-2">
+                        <span className="w-5/12">Pièce</span>
+                        <span className="w-4/12">Statut</span>
+                        <span className="w-3/12 text-right">Déposée le</span>
                       </div>
                       
                       <div className="space-y-1.5">
@@ -201,10 +203,10 @@ export function MemberDetailModal({
                           return (
                             <div
                               key={piece.id}
-                              className="grid grid-cols-12 gap-3 items-center p-2 rounded-xl hover:bg-[var(--input)] transition-colors border border-transparent hover:border-[var(--border)]"
+                              className="flex items-center justify-between px-2 py-2.5 rounded-xl hover:bg-[var(--input)] transition-colors border border-transparent hover:border-[var(--border)]"
                             >
-                              {/* Pièce */}
-                              <div className="col-span-5 flex items-center gap-2.5">
+                              {/* Pièce (5/12 width) */}
+                              <div className="w-5/12 flex items-center gap-2.5 min-w-0 pr-2">
                                 <div className="p-1.5 rounded-lg bg-[var(--input)] text-[var(--muted)] border border-[var(--border)] flex-shrink-0">
                                   <FileText className="w-3.5 h-3.5" />
                                 </div>
@@ -213,13 +215,13 @@ export function MemberDetailModal({
                                 </span>
                               </div>
 
-                              {/* Statut */}
+                              {/* Statut (4/12 width) */}
                               {isPublic ? (
-                                <div className="col-span-7">
+                                <div className="w-4/12">
                                   <StatusBadge status={suivi.statut} />
                                 </div>
                               ) : (
-                                <div className="col-span-4 relative">
+                                <div className="w-4/12 relative pr-2">
                                   <button
                                     onClick={() =>
                                       setOpenStatusId(
@@ -264,8 +266,8 @@ export function MemberDetailModal({
                                 </div>
                               )}
 
-                              {/* Date de dépôt */}
-                              <div className={`${isPublic ? 'hidden' : 'col-span-3'} text-xs text-right text-[var(--muted)] font-medium`}>
+                              {/* Date de dépôt (3/12 width, alignée à droite) */}
+                              <div className="w-3/12 text-xs text-right text-[var(--muted)] font-medium truncate">
                                 {suivi.date_depot
                                   ? new Date(suivi.date_depot).toLocaleDateString('fr-FR')
                                   : '–'}
@@ -290,20 +292,29 @@ export function MemberDetailModal({
         </div>
       </div>
 
-      {/* Style CSS pour un scrollbar émincé et moderne */}
+      {/* Style CSS pour masquer complètement les barres de défilement natives et appliquer un scroll fin */}
       <style>{`
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: transparent transparent;
+        }
+        .custom-scrollbar:hover {
+          scrollbar-color: var(--border) transparent;
+        }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
+          width: 4px;
+          height: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: var(--border);
+          background: transparent;
           border-radius: 9999px;
+          transition: background 0.2s ease;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: var(--muted);
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+          background: var(--border);
         }
       `}</style>
     </Modal>

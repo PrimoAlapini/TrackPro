@@ -187,7 +187,7 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
-          <h1 className="text-[30px] font-bold text-[var(--foreground)]">Tableau de bord</h1>
+          <h1 className="text-[30px] font-bold text-(--foreground)">Tableau de bord</h1>
         </div>
         <div className='mt-60'>
             <DocumentLoader size="lg" />
@@ -478,7 +478,7 @@ export function Dashboard({ isPublic = false }: DashboardProps) {
         pieces={pieces}
         suiviList={suiviList}
         onStatusChange={handleStatusChange}
-        isPublic={isPublic}
+        isPublic={true}
       />
     </div>
   )

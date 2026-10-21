@@ -104,7 +104,7 @@ function HomeRoute() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+      <div className="min-h-screen flex items-center justify-center bg-(--background)">
         <DocumentLoader size="lg" />
       </div>
     )
