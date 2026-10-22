@@ -45,7 +45,7 @@ export function Header({ onNewDossier }: HeaderProps) {
         {/* Logo + brand (left) */}
         <a href="/" className="flex-shrink-0 flex items-center gap-2 hover:opacity-80 transition-opacity">
           <img
-            src="/logo.png"
+            src="/trackPro_logo.png"
             alt="TrackPro"
             className="h-10 w-auto"
             onError={(e) => {

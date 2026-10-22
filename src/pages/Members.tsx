@@ -148,11 +148,9 @@ export function Members() {
     return (
       <div className="space-y-6">
         <h1 className="text-[30px] font-bold text-[var(--foreground)]">Membres</h1>
-        <Card>
-          <CardContent className="flex justify-center py-12">
+          <div className="flex justify-center py-12">
             <DocumentLoader size="lg" />
-          </CardContent>
-        </Card>
+          </div>
       </div>
     )
   }

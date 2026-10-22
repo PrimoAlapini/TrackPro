@@ -13,7 +13,7 @@ export function AppLayout({ children, onNewDossier }: AppLayoutProps) {
     <div className="min-h-screen bg-[var(--background)]">
       {/* Header */}
       <Header
-        onNewDossier={onNewDossier || (() => {})}
+        onNewDossier={onNewDossier || (() => { })}
       />
 
       {/* Main content - full width on desktop, with safe margins for FloatingMenu and BottomNav */}
@@ -30,6 +30,13 @@ export function AppLayout({ children, onNewDossier }: AppLayoutProps) {
       <div className="lg:hidden">
         <BottomNav />
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-[var(--border)] bg-[var(--card)] mt-auto w-full">
+        <div className="max-w-7xl mx-auto px-4 py-6 text-center text-sm text-[var(--muted)]">
+          <p>© {new Date().getFullYear()} TrackPro - Tous droits réservés. Par Lit~dev</p>
+        </div>
+      </footer>
     </div>
   )
 }

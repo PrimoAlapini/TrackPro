@@ -27,13 +27,13 @@ export function PublicDashboardLayout({ children }: PublicDashboardLayoutProps) 
 
   return (
     <DossierProvider>
-      <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         {/* Header */}
         <header className="border-b border-[var(--border)] bg-[var(--card)]">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="TrackPro Logo" className="h-10 w-auto" />
+              <img src="/trackPro_logo.png" alt="TrackPro Logo" className="h-10 w-auto" />
             </div>
 
             {/* Middle: Dossier selector */}
@@ -102,14 +102,14 @@ export function PublicDashboardLayout({ children }: PublicDashboardLayoutProps) 
         </header>
 
         {/* Content */}
-        <main className="max-w-7xl mx-auto px-4 py-8">
+        <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
           {children}
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-[var(--border)] bg-[var(--card)] mt-12">
+        <footer className="border-t border-[var(--border)] bg-[var(--card)] mt-auto w-full">
           <div className="max-w-7xl mx-auto px-4 py-6 text-center text-sm text-[var(--muted)]">
-            <p>© 2024 TrackPro - Vue publique de suivi de dossiers</p>
+            <p>© {new Date().getFullYear()} TrackPro - Tous droits réservés. Par Lit~dev</p>
           </div>
         </footer>
       </div>
