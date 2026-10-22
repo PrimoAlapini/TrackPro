@@ -35,7 +35,7 @@ export function Donut({ total, segments }: DonutProps) {
             <div className="w-24 h-24 rounded-full bg-[var(--card)] border border-[var(--border)] flex items-center justify-center">
               <div className="text-center">
                 <div className="text-2xl font-bold text-[var(--foreground)]">{total}</div>
-                <div className="text-xs text-[var(--muted)]">pièces</div>
+                <div className="text-xs text-[var(--muted)]">Membres</div>
               </div>
             </div>
           </div>
